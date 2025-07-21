@@ -1,0 +1,395 @@
+---
+- name: Ansible Development Environment Setup
+  hosts: localhost
+  become: true
+  gather_facts: true
+  
+  vars_prompt:
+    - name: "setup_user_prompt"
+      prompt: "Would you like to setup a user for Ansible? (yes/no)"
+      private: no
+      default: "no"
+    
+    - name: "username"
+      prompt: "Enter username for Ansible user (only needed if previous answer was yes)"
+      private: no
+      default: "ansible"
+      when: setup_user_prompt == 'yes'
+    
+    - name: "password"
+      prompt: "Enter password for the Ansible user (only needed if previous answer was yes)"
+      private: yes
+      default: ""
+      when: setup_user_prompt == 'yes'
+      
+    - name: "token"
+      prompt: "Enter your Red Hat Automation Hub token"
+      private: yes
+  
+  vars:
+    setup_user: "{{ setup_user_prompt == 'yes' }}"
+    config_dirs:
+      - templates
+      - /etc/ansible/collections
+      - /etc/ansible/roles
+    
+    ansible_packages:
+      - ansible-core
+      - python3-pip
+      - git
+      - gcc
+      - python3-devel
+      - openssl-devel
+    
+    pip_packages:
+      - ansible-builder
+      - ansible-creator
+      - ansible-lint
+      - ansible-navigator
+      - ansible-runner
+      - ansible-sign
+  
+  tasks:
+    - name: Upgrade all system packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+      when: ansible_os_family == 'RedHat'
+    
+    - name: Install required system packages
+      ansible.builtin.dnf:
+        name: "{{ ansible_packages }}"
+        state: present
+      when: ansible_os_family == 'RedHat'
+    
+    - name: Create Ansible user if requested
+      ansible.builtin.user:
+        name: "{{ username }}"
+        password: "{{ password | password_hash('sha512') }}"
+        shell: /bin/bash
+        groups: wheel
+        append: yes
+        generate_ssh_key: yes
+        ssh_key_bits: 4096
+        ssh_key_comment: "ansible-generated key"
+      when: setup_user
+    
+    - name: Generate SSH key for current user if not root
+      ansible.builtin.user:
+        name: "{{ ansible_user_id }}"
+        generate_ssh_key: yes
+        ssh_key_bits: 4096
+        ssh_key_comment: "ansible-generated key"
+      when: not setup_user and ansible_user_id != 'root'
+      become: false
+    
+    - name: Upgrade pip and setuptools
+      ansible.builtin.pip:
+        name:
+          - pip
+          - setuptools
+        state: latest
+        extra_args: --user
+      become: false
+    
+    - name: Install Ansible packages with pip
+      ansible.builtin.pip:
+        name: "{{ pip_packages }}"
+        state: latest
+        extra_args: --user
+      become: false
+    
+    - name: Create required directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop: "{{ config_dirs }}"
+    
+    - name: Create ansible.cfg template
+      ansible.builtin.copy:
+        content: |
+          [galaxy]
+          server_list = validated, published, galaxy
+          
+          [galaxy_server.published]
+          url=https://console.redhat.com/api/automation-hub/content/published/
+          auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
+          token={{ token }}
+          
+          [galaxy_server.validated]
+          url=https://console.redhat.com/api/automation-hub/content/validated/
+          auth_url=https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
+          token={{ token }}
+          
+          [galaxy_server.galaxy]
+          url=https://galaxy.ansible.com/
+          
+          roles_path    = /etc/ansible/roles
+          collections_path    = /etc/ansible/collections
+        dest: templates/ansible.cfg.j2
+        mode: '0644'
+    
+    - name: Deploy ansible.cfg to user directory
+      ansible.builtin.template:
+        src: templates/ansible.cfg.j2
+        dest: ./ansible.cfg
+        mode: '0644'
+      become: false
+    
+    - name: Deploy ansible.cfg to system config
+      ansible.builtin.template:
+        src: templates/ansible.cfg.j2
+        dest: /etc/ansible/ansible.cfg
+        mode: '0644'
+    
+    - name: Create comprehensive requirements.yml
+      ansible.builtin.copy:
+        content: |
+          ---
+          # requirements.yml
+          # Comprehensive collection list from Red Hat Automation Hub
+          
+          collections:
+            # Core Ansible Collections
+            - ansible.controller
+            - ansible.netcommon
+            - ansible.posix
+            - ansible.utils
+            - ansible.windows
+            
+            # Cloud Providers
+            - amazon.aws
+            - azure.azcollection
+            - google.cloud
+            
+            # Network Vendors
+            - arista.eos
+            - cisco.ios
+            - cisco.iosxr
+            - cisco.nxos
+            - cisco.asa
+            - cisco.dnac
+            - juniper.junos
+            
+            # Red Hat Products
+            - redhat.insights
+            - redhat.openshift
+            - redhat.rhel_system_roles
+            - redhat.satellite
+            - redhat.rhv
+            
+            # Security
+            - cyberark.conjur
+            - cyberark.pas
+            - fortinet.fortios
+            
+            # Storage
+            - netapp.ontap
+            - purestorage.flasharray
+            - dellemc.openmanage
+            
+            # Containers and Kubernetes
+            - kubernetes.core
+            - containers.podman
+            
+            # Monitoring and Management
+            - servicenow.itsm
+            - splunk.es
+            
+            # Community Collections
+            - community.general
+            - community.crypto
+            - community.docker
+            - community.mysql
+            - community.postgresql
+        dest: requirements.yml
+        mode: '0644'
+      become: false
+    
+    - name: Create ansible-galaxy installation wrapper
+      ansible.builtin.copy:
+        content: |
+          #!/usr/bin/python3
+          """
+          Ansible Galaxy Collection Installer with Error Handling
+          Installs collections while gracefully handling failures
+          """
+          
+          import os
+          import sys
+          import subprocess
+          import yaml
+          import json
+          from datetime import datetime
+          
+          def read_requirements_file(requirements_file):
+              """Read collections from requirements.yml file."""
+              try:
+                  with open(requirements_file, 'r') as f:
+                      data = yaml.safe_load(f)
+                      return data.get('collections', [])
+              except Exception as e:
+                  print(f"Error reading requirements file: {e}")
+                  return []
+          
+          def install_collection(collection):
+              """Install a single collection and return success status."""
+              cmd = ['ansible-galaxy', 'collection', 'install', collection, '-f']
+              try:
+                  result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+                  if result.returncode == 0:
+                      print(f"✓ Successfully installed {collection}")
+                      return True, None
+                  else:
+                      error_msg = result.stderr.strip() or result.stdout.strip()
+                      print(f"✗ Failed to install {collection}: {error_msg}")
+                      return False, error_msg
+              except subprocess.TimeoutExpired:
+                  print(f"✗ Timeout installing {collection}")
+                  return False, "Installation timeout"
+              except Exception as e:
+                  print(f"✗ Error installing {collection}: {e}")
+                  return False, str(e)
+          
+          def main():
+              requirements_file = 'requirements.yml'
+              if len(sys.argv) > 1:
+                  requirements_file = sys.argv[1]
+              
+              if not os.path.exists(requirements_file):
+                  print(f"Requirements file not found: {requirements_file}")
+                  sys.exit(1)
+              
+              collections = read_requirements_file(requirements_file)
+              if not collections:
+                  print("No collections found in requirements file")
+                  sys.exit(1)
+              
+              print(f"Installing {len(collections)} collections from {requirements_file}...")
+              print("This may take several minutes...\n")
+              
+              success_count = 0
+              fail_count = 0
+              failed_collections = []
+              
+              for i, collection in enumerate(collections, 1):
+                  print(f"[{i}/{len(collections)}] Installing {collection}...")
+                  success, error = install_collection(collection)
+                  
+                  if success:
+                      success_count += 1
+                  else:
+                      fail_count += 1
+                      failed_collections.append({
+                          'name': collection,
+                          'error': error
+                      })
+              
+              # Generate installation report
+              report = {
+                  'timestamp': datetime.now().isoformat(),
+                  'total_collections': len(collections),
+                  'successful_installs': success_count,
+                  'failed_installs': fail_count,
+                  'failed_collections': failed_collections
+              }
+              
+              # Save report
+              with open('collection_install_report.json', 'w') as f:
+                  json.dump(report, f, indent=2)
+              
+              # Display summary
+              print(f"\n" + "="*50)
+              print("COLLECTION INSTALLATION SUMMARY")
+              print("="*50)
+              print(f"Total collections: {len(collections)}")
+              print(f"Successfully installed: {success_count}")
+              print(f"Failed to install: {fail_count}")
+              print(f"Success rate: {(success_count/len(collections)*100):.1f}%")
+              
+              if failed_collections:
+                  print(f"\nFailed collections:")
+                  for failed in failed_collections:
+                      print(f"  - {failed['name']}: {failed['error']}")
+              
+              print(f"\nDetailed report saved: collection_install_report.json")
+              
+              # Exit with success even if some collections failed
+              # This allows the playbook to continue
+              sys.exit(0)
+          
+          if __name__ == '__main__':
+              main()
+        dest: /usr/local/bin/ansible-galaxy-installer
+        mode: '0755'
+    
+    - name: Install Ansible collections
+      ansible.builtin.command: /usr/local/bin/ansible-galaxy-installer requirements.yml
+      register: collection_install
+      become: false
+      args:
+        chdir: "{{ ansible_env.PWD }}"
+    
+    - name: Display collection installation results
+      ansible.builtin.debug:
+        var: collection_install.stdout_lines
+    
+    - name: Create custom MOTD for Ansible development
+      ansible.builtin.copy:
+        content: |
+          ╔══════════════════════════════════════════════════════════════════════════════╗
+          ║                                                                              ║
+          ║    █████╗ ███╗   ██╗███████╗██╗██████╗ ██╗     ███████╗                     ║
+          ║   ██╔══██╗████╗  ██║██╔════╝██║██╔══██╗██║     ██╔════╝                     ║
+          ║   ███████║██╔██╗ ██║███████╗██║██████╔╝██║     █████╗                       ║
+          ║   ██╔══██║██║╚██╗██║╚════██║██║██╔══██╗██║     ██╔══╝                       ║
+          ║   ██║  ██║██║ ╚████║███████║██║██████╔╝███████╗███████╗                     ║
+          ║   ╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝╚═════╝ ╚══════╝╚══════╝                     ║
+          ║                                                                              ║
+          ║                        Development Environment                               ║
+          ║                                                                              ║
+          ║  • Ansible Core: Installed ✓                                                ║
+          ║  • Collections: Auto-installed from requirements.yml                        ║
+          ║  • Red Hat Automation Hub: Configured                                       ║
+          ║  • Development Tools: ansible-lint, ansible-navigator, etc.                 ║
+          ║                                                                              ║
+          ║  Quick Commands:                                                             ║
+          ║    ansible --version                                                        ║
+          ║    ansible-galaxy collection list                                           ║
+          ║    ansible-navigator                                                        ║
+          ║    ansible-lint playbook.yml                                                ║
+          ║                                                                              ║
+          ╚══════════════════════════════════════════════════════════════════════════════╝
+        dest: /etc/motd
+        mode: '0644'
+    
+    - name: Final setup summary
+      ansible.builtin.debug:
+        msg: |
+          ============================================================
+          Ansible Development Environment Setup Complete!
+          
+          ✓ Ansible Core installed and configured
+          ✓ Red Hat Automation Hub token configured
+          ✓ ansible.cfg created (user and system-wide)
+          ✓ requirements.yml with comprehensive collection list
+          ✓ Collections installed with error handling
+          {% if setup_user %}
+          ✓ Ansible user "{{ username }}" created with SSH keys
+          {% else %}
+          ✓ SSH keys generated for current user
+          {% endif %}
+          ✓ Development tools installed (lint, navigator, etc.)
+          ✓ Custom MOTD configured
+          
+          Configuration files:
+          - ansible.cfg (current directory and /etc/ansible/)
+          - requirements.yml
+          - Collection install report: collection_install_report.json
+          
+          Next steps:
+          1. Test: ansible --version
+          2. List collections: ansible-galaxy collection list
+          3. Start developing: ansible-navigator
+          ============================================================

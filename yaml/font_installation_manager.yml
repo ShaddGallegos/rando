@@ -1,0 +1,224 @@
+---
+- name: Font Installation Manager
+  hosts: localhost
+  become: true
+  gather_facts: true
+  
+  vars:
+    essential_fonts:
+      - liberation-fonts
+      - dejavu-fonts-common
+      - dejavu-sans-fonts
+      - dejavu-serif-fonts
+      - dejavu-sans-mono-fonts
+      - gnu-free-fonts-common
+      - gnu-free-mono-fonts
+      - gnu-free-sans-fonts
+      - gnu-free-serif-fonts
+      - google-noto-fonts-common
+      - google-noto-sans-fonts
+      - google-noto-serif-fonts
+      - google-noto-emoji-fonts
+      
+    international_fonts:
+      - google-noto-cjk-fonts
+      - google-noto-sans-cjk-fonts
+      - google-noto-serif-cjk-fonts
+      - lohit-devanagari-fonts
+      - lohit-gujarati-fonts
+      - lohit-kannada-fonts
+      - paktype-naskh-basic-fonts
+      
+    microsoft_fonts_rpm: msttcore-fonts-installer
+    
+  tasks:
+    - name: Check current font status
+      ansible.builtin.shell: fc-list | wc -l
+      register: initial_font_count
+      
+    - name: Enable EPEL repository (for MS fonts)
+      ansible.builtin.dnf:
+        name: epel-release
+        state: present
+      when: ansible_os_family == 'RedHat'
+      ignore_errors: true
+    
+    - name: Install essential font packages
+      ansible.builtin.dnf:
+        name: "{{ essential_fonts }}"
+        state: present
+      when: ansible_os_family == 'RedHat'
+      register: essential_fonts_result
+    
+    - name: Install international font packages
+      ansible.builtin.dnf:
+        name: "{{ international_fonts }}"
+        state: present
+      when: ansible_os_family == 'RedHat'
+      register: international_fonts_result
+      ignore_errors: true
+    
+    - name: Install Microsoft TrueType Core Fonts
+      block:
+        - name: Download MS fonts installer
+          ansible.builtin.get_url:
+            url: "https://downloads.sourceforge.net/project/mscorefonts2/rpms/msttcore-fonts-installer-2.6-1.noarch.rpm"
+            dest: /tmp/msttcore-fonts-installer.rpm
+            mode: '0644'
+            timeout: 30
+          register: ms_fonts_download
+          ignore_errors: true
+          
+        - name: Install MS fonts RPM
+          ansible.builtin.dnf:
+            name: /tmp/msttcore-fonts-installer.rpm
+            state: present
+            disable_gpg_check: true
+          when: ms_fonts_download is succeeded
+          ignore_errors: true
+          register: ms_fonts_install
+          
+        - name: Clean up MS fonts installer
+          ansible.builtin.file:
+            path: /tmp/msttcore-fonts-installer.rpm
+            state: absent
+      rescue:
+        - name: Install alternative MS-compatible fonts
+          ansible.builtin.dnf:
+            name:
+              - liberation-fonts-common
+              - liberation-mono-fonts
+              - liberation-narrow-fonts
+              - liberation-sans-fonts
+              - liberation-serif-fonts
+            state: present
+          when: ansible_os_family == 'RedHat'
+    
+    - name: Install font management tools
+      ansible.builtin.dnf:
+        name:
+          - fontconfig
+          - fontconfig-devel
+          - fonttools
+          - font-manager
+        state: present
+      when: ansible_os_family == 'RedHat'
+      ignore_errors: true
+    
+    - name: Create user fonts directory
+      ansible.builtin.file:
+        path: "{{ item }}/.local/share/fonts"
+        state: directory
+        mode: '0755'
+        owner: "{{ item | basename }}"
+        group: "{{ item | basename }}"
+      loop: "{{ ansible_facts.getent_passwd.keys() | map('regex_replace', '^(.*)$', '/home/\\1') | list }}"
+      when: item != '/home/root'
+      ignore_errors: true
+    
+    - name: Download additional open source fonts
+      block:
+        - name: Create temporary fonts directory
+          ansible.builtin.file:
+            path: /tmp/fonts_download
+            state: directory
+            mode: '0755'
+            
+        - name: Download Fira Code font
+          ansible.builtin.get_url:
+            url: "https://github.com/tonsky/FiraCode/releases/download/6.2/Fira_Code_v6.2.zip"
+            dest: /tmp/fonts_download/FiraCode.zip
+            mode: '0644'
+            timeout: 30
+          ignore_errors: true
+          
+        - name: Extract Fira Code font
+          ansible.builtin.unarchive:
+            src: /tmp/fonts_download/FiraCode.zip
+            dest: /tmp/fonts_download/
+            remote_src: true
+          ignore_errors: true
+          
+        - name: Install Fira Code to system fonts
+          ansible.builtin.copy:
+            src: "/tmp/fonts_download/ttf/"
+            dest: /usr/share/fonts/firacode/
+            mode: '0644'
+          ignore_errors: true
+          
+        - name: Download JetBrains Mono font
+          ansible.builtin.get_url:
+            url: "https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip"
+            dest: /tmp/fonts_download/JetBrainsMono.zip
+            mode: '0644'
+            timeout: 30
+          ignore_errors: true
+          
+        - name: Extract and install JetBrains Mono
+          ansible.builtin.unarchive:
+            src: /tmp/fonts_download/JetBrainsMono.zip
+            dest: /tmp/fonts_download/jetbrains/
+            remote_src: true
+          ignore_errors: true
+          
+        - name: Install JetBrains Mono to system fonts
+          ansible.builtin.shell: |
+            find /tmp/fonts_download/jetbrains -name "*.ttf" -exec cp {} /usr/share/fonts/jetbrains/ \;
+          ignore_errors: true
+      rescue:
+        - name: Skip additional fonts download
+          ansible.builtin.debug:
+            msg: "Additional fonts download failed - continuing with system fonts"
+    
+    - name: Rebuild font cache
+      ansible.builtin.command: fc-cache -fv
+      register: font_cache_rebuild
+      
+    - name: Update font cache for all users
+      ansible.builtin.shell: |
+        for user_home in /home/*; do
+          if [ -d "$user_home" ]; then
+            sudo -u $(basename "$user_home") fc-cache -fv "$user_home/.local/share/fonts" 2>/dev/null || true
+          fi
+        done
+      ignore_errors: true
+    
+    - name: Check final font status
+      ansible.builtin.shell: fc-list | wc -l
+      register: final_font_count
+      
+    - name: Generate font installation report
+      ansible.builtin.shell: |
+        echo "Font Installation Report - $(date)" > /var/log/font_installation_report.txt
+        echo "=================================" >> /var/log/font_installation_report.txt
+        echo "" >> /var/log/font_installation_report.txt
+        echo "Initial font count: {{ initial_font_count.stdout }}" >> /var/log/font_installation_report.txt
+        echo "Final font count: {{ final_font_count.stdout }}" >> /var/log/font_installation_report.txt
+        echo "Fonts added: $(({{ final_font_count.stdout }} - {{ initial_font_count.stdout }}))" >> /var/log/font_installation_report.txt
+        echo "" >> /var/log/font_installation_report.txt
+        echo "Installed Font Families:" >> /var/log/font_installation_report.txt
+        fc-list : family | sort | uniq >> /var/log/font_installation_report.txt
+        echo "" >> /var/log/font_installation_report.txt
+        echo "Font directories:" >> /var/log/font_installation_report.txt
+        find /usr/share/fonts -type d >> /var/log/font_installation_report.txt
+    
+    - name: Clean up temporary files
+      ansible.builtin.file:
+        path: /tmp/fonts_download
+        state: absent
+    
+    - name: Display installation summary
+      ansible.builtin.debug:
+        msg: |
+          Font Installation Complete!
+          
+          Initial fonts: {{ initial_font_count.stdout }}
+          Final fonts: {{ final_font_count.stdout }}
+          Fonts added: {{ final_font_count.stdout | int - initial_font_count.stdout | int }}
+          
+          Essential fonts: {{ 'INSTALLED' if essential_fonts_result is succeeded else 'FAILED' }}
+          International fonts: {{ 'INSTALLED' if international_fonts_result is succeeded else 'PARTIAL' }}
+          Microsoft fonts: {{ 'INSTALLED' if ms_fonts_install is succeeded else 'LIBERATION FALLBACK' }}
+          
+          Font cache rebuilt successfully
+          Report saved: /var/log/font_installation_report.txt

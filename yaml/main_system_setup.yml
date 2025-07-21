@@ -1,0 +1,131 @@
+---
+- name: Complete System Setup and Management
+  hosts: localhost
+  become: true
+  gather_facts: true
+  
+  vars_prompt:
+    - name: "setup_mode"
+      prompt: |
+        Select setup mode:
+        1) Full setup (all components)
+        2) Development only (Ansible, Python tools)
+        3) System maintenance only
+        4) Application setup only
+        5) Custom selection
+      private: no
+      default: "1"
+    
+    - name: "custom_playbooks"
+      prompt: "Enter playbook names separated by commas (for custom selection)"
+      private: no
+      default: ""
+      when: setup_mode == "5"
+  
+  vars:
+    available_playbooks:
+      development:
+        - ansible_dev_setup.yml
+        - python_system_fixes.yml
+      maintenance:
+        - analyze_and_fix_system_errors.yml
+        - container_image_manager.yml
+        - font_installation_manager.yml
+      applications:
+        - install_flatpak_and_vscode.yml
+        - podman_complete_setup.yml
+        - configure_libreoffice_msoffice.yml
+  
+  tasks:
+    - name: Set playbooks to run based on mode
+      ansible.builtin.set_fact:
+        playbooks_to_run: |
+          {%- if setup_mode == "1" -%}
+          {{ (available_playbooks.development + available_playbooks.maintenance + available_playbooks.applications) | list }}
+          {%- elif setup_mode == "2" -%}
+          {{ available_playbooks.development | list }}
+          {%- elif setup_mode == "3" -%}
+          {{ available_playbooks.maintenance | list }}
+          {%- elif setup_mode == "4" -%}
+          {{ available_playbooks.applications | list }}
+          {%- elif setup_mode == "5" -%}
+          {{ custom_playbooks.split(',') | map('trim') | list }}
+          {%- else -%}
+          []
+          {%- endif -%}
+    
+    - name: Display selected playbooks
+      ansible.builtin.debug:
+        msg: |
+          Selected setup mode: {{ setup_mode }}
+          Playbooks to execute:
+          {% for playbook in playbooks_to_run %}
+          - {{ playbook }}
+          {% endfor %}
+    
+    - name: Confirm execution
+      ansible.builtin.pause:
+        prompt: "Press ENTER to continue with the selected playbooks, or Ctrl+C to abort"
+    
+    - name: Execute selected playbooks
+      ansible.builtin.include: "{{ item }}"
+      loop: "{{ playbooks_to_run }}"
+      when: playbooks_to_run | length > 0
+      ignore_errors: true
+      register: playbook_results
+    
+    - name: Generate execution summary
+      ansible.builtin.copy:
+        content: |
+          System Setup Execution Summary
+          ==============================
+          Date: {{ ansible_date_time.iso8601 }}
+          Mode: {{ setup_mode }}
+          Hostname: {{ ansible_hostname }}
+          
+          Playbooks Executed:
+          {% for result in playbook_results.results %}
+          {% if result.item is defined %}
+          - {{ result.item }}: {{ 'SUCCESS' if not result.failed else 'FAILED' }}
+          {% if result.failed and result.msg is defined %}
+            Error: {{ result.msg }}
+          {% endif %}
+          {% endif %}
+          {% endfor %}
+          
+          System Information:
+          - OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          - Kernel: {{ ansible_kernel }}
+          - Architecture: {{ ansible_architecture }}
+          - Memory: {{ ansible_memtotal_mb }} MB
+          - CPUs: {{ ansible_processor_vcpus }}
+          
+          {% if playbook_results.results | selectattr('failed', 'defined') | selectattr('failed') | list | length == 0 %}
+           All playbooks executed successfully!
+          {% else %}
+           Some playbooks encountered issues. Check individual logs for details.
+          {% endif %}
+        dest: /var/log/system_setup_summary_{{ ansible_date_time.epoch }}.txt
+        mode: '0644'
+    
+    - name: Display final summary
+      ansible.builtin.debug:
+        msg: |
+          ============================================================
+          SYSTEM SETUP COMPLETE
+          ============================================================
+          
+          Executed {{ playbooks_to_run | length }} playbook(s)
+          Success: {{ playbook_results.results | rejectattr('failed', 'defined') | list | length + (playbook_results.results | selectattr('failed', 'defined') | rejectattr('failed') | list | length) }}
+          Failed: {{ playbook_results.results | selectattr('failed', 'defined') | selectattr('failed') | list | length }}
+          
+          Summary report: /var/log/system_setup_summary_{{ ansible_date_time.epoch }}.txt
+          
+          Available individual playbooks:
+          {% for category, playbooks in available_playbooks.items() %}
+          {{ category | title }}:
+          {% for playbook in playbooks %}
+          - ansible-playbook {{ playbook }}
+          {% endfor %}
+          {% endfor %}
+          ============================================================

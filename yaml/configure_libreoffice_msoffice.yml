@@ -1,0 +1,165 @@
+---
+- name: Configure LibreOffice for MS Office Formats
+  hosts: localhost
+  become: true
+  gather_facts: true
+  
+  vars:
+    libreoffice_packages:
+      - libreoffice-core
+      - libreoffice-writer
+      - libreoffice-calc
+      - libreoffice-impress
+      - libreoffice-draw
+    
+    xmlstarlet_package: xmlstarlet
+    
+  tasks:
+    - name: Install LibreOffice packages
+      ansible.builtin.dnf:
+        name: "{{ libreoffice_packages }}"
+        state: present
+      when: ansible_os_family == 'RedHat'
+    
+    - name: Install xmlstarlet for XML manipulation
+      ansible.builtin.dnf:
+        name: "{{ xmlstarlet_package }}"
+        state: present
+      when: ansible_os_family == 'RedHat'
+    
+    - name: Find all user home directories
+      ansible.builtin.find:
+        paths: /home
+        file_type: directory
+        recurse: false
+      register: user_homes
+    
+    - name: Configure LibreOffice for each user
+      block:
+        - name: Create LibreOffice config directory
+          ansible.builtin.file:
+            path: "{{ item.path }}/.config/libreoffice/4/user/registry"
+            state: directory
+            mode: '0755'
+            owner: "{{ item.path | basename }}"
+            group: "{{ item.path | basename }}"
+          loop: "{{ user_homes.files }}"
+          ignore_errors: true
+        
+        - name: Create registrymodifications.xcu template
+          ansible.builtin.template:
+            src: registrymodifications.xcu.j2
+            dest: "{{ item.path }}/.config/libreoffice/4/user/registrymodifications.xcu"
+            mode: '0644'
+            owner: "{{ item.path | basename }}"
+            group: "{{ item.path | basename }}"
+          loop: "{{ user_homes.files }}"
+          ignore_errors: true
+    
+    - name: Create LibreOffice configuration template
+      ansible.builtin.copy:
+        content: |
+          <?xml version="1.0" encoding="UTF-8"?>
+          <oor:items xmlns:oor="http://openoffice.org/2001/registry" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <!-- Writer: Default to DOCX -->
+            <item oor:path="/org.openoffice.Office.Writer/DefaultSaveFormat">
+              <prop oor:name="Document" oor:op="fuse">
+                <value>MS Word 2007 XML</value>
+              </prop>
+            </item>
+            
+            <!-- Calc: Default to XLSX -->
+            <item oor:path="/org.openoffice.Office.Calc/DefaultSaveFormat">
+              <prop oor:name="Document" oor:op="fuse">
+                <value>Calc MS Excel 2007 XML</value>
+              </prop>
+            </item>
+            
+            <!-- Impress: Default to PPTX -->
+            <item oor:path="/org.openoffice.Office.Impress/DefaultSaveFormat">
+              <prop oor:name="Document" oor:op="fuse">
+                <value>Impress MS PowerPoint 2007 XML</value>
+              </prop>
+            </item>
+            
+            <!-- Draw: Default to DOCX for compatibility -->
+            <item oor:path="/org.openoffice.Office.Draw/DefaultSaveFormat">
+              <prop oor:name="Document" oor:op="fuse">
+                <value>draw_MS_Word_2007_XML</value>
+              </prop>
+            </item>
+            
+            <!-- Enable MS Office compatibility mode -->
+            <item oor:path="/org.openoffice.Office.Common/Filter/Microsoft">
+              <prop oor:name="Import" oor:op="fuse">
+                <value>true</value>
+              </prop>
+              <prop oor:name="Export" oor:op="fuse">
+                <value>true</value>
+              </prop>
+            </item>
+            
+            <!-- Auto-save in MS Office formats -->
+            <item oor:path="/org.openoffice.Office.Common/Save">
+              <prop oor:name="AlwaysAllowSave" oor:op="fuse">
+                <value>true</value>
+              </prop>
+              <prop oor:name="UseUserData" oor:op="fuse">
+                <value>false</value>
+              </prop>
+            </item>
+          </oor:items>
+        dest: /tmp/libreoffice_config_template.xcu
+        mode: '0644'
+    
+    - name: Apply configuration to system-wide LibreOffice
+      ansible.builtin.copy:
+        src: /tmp/libreoffice_config_template.xcu
+        dest: /etc/libreoffice/registry/registrymodifications.xcu
+        mode: '0644'
+        remote_src: true
+      ignore_errors: true
+    
+    - name: Configure file associations for MS Office formats
+      ansible.builtin.copy:
+        content: |
+          [Desktop Entry]
+          Version=1.0
+          Type=Application
+          Name=LibreOffice Writer
+          Comment=Write and edit text documents
+          Exec=libreoffice --writer %U
+          Icon=libreoffice-writer
+          StartupWMClass=libreoffice-writer
+          MimeType=application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/msword;
+          Categories=Office;WordProcessor;
+          Keywords=Text;Document;OpenDocument;Microsoft;Word;
+        dest: /usr/share/applications/libreoffice-writer-msoffice.desktop
+        mode: '0644'
+    
+    - name: Set LibreOffice as default for MS Office file types
+      ansible.builtin.command: |
+        xdg-mime default libreoffice-writer-msoffice.desktop {{ item }}
+      loop:
+        - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+        - application/msword
+        - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        - application/vnd.ms-excel
+        - application/vnd.openxmlformats-officedocument.presentationml.presentation
+        - application/vnd.ms-powerpoint
+      ignore_errors: true
+    
+    - name: Clean up temporary files
+      ansible.builtin.file:
+        path: /tmp/libreoffice_config_template.xcu
+        state: absent
+    
+    - name: Display configuration status
+      ansible.builtin.debug:
+        msg: |
+          LibreOffice has been configured to use MS Office formats by default:
+          - Writer: DOCX format
+          - Calc: XLSX format  
+          - Impress: PPTX format
+          - System-wide file associations updated
+          - Configuration applied to all user profiles

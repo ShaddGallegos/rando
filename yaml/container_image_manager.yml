@@ -1,0 +1,184 @@
+---
+- name: Container Image Manager
+  hosts: localhost
+  become: false
+  gather_facts: true
+  
+  vars:
+    container_runtime: "{{ 'podman' if ansible_facts.packages['podman'] is defined else 'docker' }}"
+    cleanup_age_days: 7
+    max_image_size_gb: 5
+    
+  tasks:
+    - name: Detect container runtime
+      ansible.builtin.command: "{{ item }} --version"
+      register: runtime_check
+      loop:
+        - podman
+        - docker
+      ignore_errors: true
+      
+    - name: Set container runtime based on availability
+      ansible.builtin.set_fact:
+        available_runtime: "{{ item.item }}"
+      loop: "{{ runtime_check.results }}"
+      when: item.rc == 0
+      vars:
+        item: "{{ item }}"
+    
+    - name: List all container images
+      ansible.builtin.command: "{{ available_runtime }} images --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.CreatedAt}}\t{{.Size}}'"
+      register: all_images
+      
+    - name: List dangling images
+      ansible.builtin.command: "{{ available_runtime }} images -f dangling=true -q"
+      register: dangling_images
+      
+    - name: List unused images
+      ansible.builtin.shell: |
+        {{ available_runtime }} images --format "{{.ID}}" | while read image; do
+          if [ -z "$({{ available_runtime }} ps -a --filter ancestor=$image -q)" ]; then
+            echo $image
+          fi
+        done
+      register: unused_images
+      
+    - name: Get storage usage
+      ansible.builtin.command: "{{ available_runtime }} system df"
+      register: storage_usage
+      
+    - name: Clean up dangling images
+      ansible.builtin.command: "{{ available_runtime }} image prune -f"
+      register: dangling_cleanup
+      when: dangling_images.stdout_lines | length > 0
+      
+    - name: Remove unused images older than specified days
+      ansible.builtin.shell: |
+        {{ available_runtime }} images --format "{{.ID}} {{.CreatedAt}}" | while read image_id created_at; do
+          created_timestamp=$(date -d "$created_at" +%s)
+          cutoff_timestamp=$(date -d "{{ cleanup_age_days }} days ago" +%s)
+          if [ $created_timestamp -lt $cutoff_timestamp ]; then
+            if [ -z "$({{ available_runtime }} ps -a --filter ancestor=$image_id -q)" ]; then
+              echo "Removing old unused image: $image_id"
+              {{ available_runtime }} rmi $image_id 2>/dev/null || true
+            fi
+          fi
+        done
+      register: old_image_cleanup
+      
+    - name: Remove large unused images
+      ansible.builtin.shell: |
+        {{ available_runtime }} images --format "{{.ID}} {{.Size}}" | while read image_id size; do
+          # Convert size to GB (basic conversion)
+          size_value=$(echo $size | sed 's/[^0-9.]//g')
+          size_unit=$(echo $size | sed 's/[0-9.]//g')
+          
+          case $size_unit in
+            *GB*|*G*)
+              size_gb=$size_value
+              ;;
+            *MB*|*M*)
+              size_gb=$(echo "scale=2; $size_value / 1024" | bc -l)
+              ;;
+            *)
+              size_gb=0
+              ;;
+          esac
+          
+          if [ $(echo "$size_gb > {{ max_image_size_gb }}" | bc -l) -eq 1 ]; then
+            if [ -z "$({{ available_runtime }} ps -a --filter ancestor=$image_id -q)" ]; then
+              echo "Removing large unused image: $image_id ($size)"
+              {{ available_runtime }} rmi $image_id 2>/dev/null || true
+            fi
+          fi
+        done
+      register: large_image_cleanup
+      
+    - name: Remove stopped containers
+      ansible.builtin.command: "{{ available_runtime }} container prune -f"
+      register: container_cleanup
+      
+    - name: Remove unused volumes
+      ansible.builtin.command: "{{ available_runtime }} volume prune -f"
+      register: volume_cleanup
+      ignore_errors: true
+      
+    - name: Remove unused networks
+      ansible.builtin.command: "{{ available_runtime }} network prune -f"
+      register: network_cleanup
+      ignore_errors: true
+      
+    - name: Compact storage (Podman only)
+      ansible.builtin.command: podman system reset --force
+      register: storage_compact
+      when: available_runtime == 'podman'
+      ignore_errors: true
+      
+    - name: Get post-cleanup storage usage
+      ansible.builtin.command: "{{ available_runtime }} system df"
+      register: post_cleanup_storage
+      
+    - name: List remaining images
+      ansible.builtin.command: "{{ available_runtime }} images --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.CreatedAt}}\t{{.Size}}'"
+      register: remaining_images
+      
+    - name: Generate container management report
+      ansible.builtin.copy:
+        content: |
+          Container Image Management Report
+          Generated: {{ ansible_date_time.iso8601 }}
+          Runtime: {{ available_runtime }}
+          Hostname: {{ ansible_hostname }}
+          
+          === BEFORE CLEANUP ===
+          {{ storage_usage.stdout }}
+          
+          Total Images: {{ all_images.stdout_lines | length - 1 }}
+          Dangling Images: {{ dangling_images.stdout_lines | length }}
+          Unused Images: {{ unused_images.stdout_lines | length }}
+          
+          === CLEANUP ACTIONS ===
+          {% if dangling_cleanup is defined %}
+          Dangling Images Removed: {{ dangling_cleanup.stdout }}
+          {% endif %}
+          
+          Old Images Cleanup:
+          {{ old_image_cleanup.stdout | default('No old images found') }}
+          
+          Large Images Cleanup:
+          {{ large_image_cleanup.stdout | default('No large images found') }}
+          
+          Container Cleanup: {{ container_cleanup.stdout }}
+          Volume Cleanup: {{ volume_cleanup.stdout | default('Not applicable') }}
+          Network Cleanup: {{ network_cleanup.stdout | default('Not applicable') }}
+          
+          === AFTER CLEANUP ===
+          {{ post_cleanup_storage.stdout }}
+          
+          Remaining Images:
+          {{ remaining_images.stdout }}
+          
+          === RECOMMENDATIONS ===
+          - Regularly run image cleanup to prevent storage bloat
+          - Use multi-stage builds to reduce image sizes
+          - Tag images appropriately for better management
+          - Consider using container registries for image storage
+        dest: /tmp/container_management_report_{{ ansible_date_time.epoch }}.txt
+        mode: '0644'
+    
+    - name: Display cleanup summary
+      ansible.builtin.debug:
+        msg: |
+          Container Image Management Complete!
+          
+          Runtime Used: {{ available_runtime }}
+          Images Before: {{ all_images.stdout_lines | length - 1 }}
+          Images After: {{ remaining_images.stdout_lines | length - 1 }}
+          Images Removed: {{ (all_images.stdout_lines | length - 1) - (remaining_images.stdout_lines | length - 1) }}
+          
+          Dangling Images Cleaned: {{ dangling_images.stdout_lines | length }}
+          Containers Cleaned: YES
+          Volumes Cleaned: {{ 'YES' if volume_cleanup is succeeded else 'N/A' }}
+          Networks Cleaned: {{ 'YES' if network_cleanup is succeeded else 'N/A' }}
+          
+          Report saved: /tmp/container_management_report_{{ ansible_date_time.epoch }}.txt

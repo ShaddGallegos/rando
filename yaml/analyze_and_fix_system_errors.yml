@@ -1,0 +1,235 @@
+---
+- name: System Error Analysis and Fixes
+  hosts: localhost
+  become: true
+  gather_facts: true
+  
+  vars:
+    log_analysis_patterns:
+      - pattern: "Failed to start"
+        action: "service_restart"
+        description: "Service startup failures"
+      - pattern: "No space left on device"
+        action: "disk_cleanup" 
+        description: "Disk space issues"
+      - pattern: "Connection refused"
+        action: "network_check"
+        description: "Network connectivity problems"
+      - pattern: "Out of memory"
+        action: "memory_optimization"
+        description: "Memory issues"
+      - pattern: "Permission denied"
+        action: "permission_fix"
+        description: "Permission problems"
+    
+    cleanup_paths:
+      - /tmp/*
+      - /var/tmp/*
+      - /var/log/*.old
+      - /var/cache/dnf/*
+      - ~/.cache/*
+    
+  tasks:
+    - name: Create analysis report directory
+      ansible.builtin.file:
+        path: /var/log/system-analysis
+        state: directory
+        mode: '0755'
+    
+    - name: Analyze system logs with journalctl
+      ansible.builtin.shell: |
+        journalctl --no-pager --since="24 hours ago" --priority=err | \
+        head -1000 > /var/log/system-analysis/recent_errors.log
+      register: journal_errors
+      ignore_errors: true
+    
+    - name: Analyze traditional logs if available
+      ansible.builtin.shell: |
+        if [ -f /var/log/messages ]; then
+          tail -1000 /var/log/messages | grep -i error > /var/log/system-analysis/messages_errors.log
+        fi
+      ignore_errors: true
+    
+    - name: Check disk space usage
+      ansible.builtin.shell: df -h
+      register: disk_usage
+    
+    - name: Check memory usage
+      ansible.builtin.shell: free -h
+      register: memory_usage
+    
+    - name: Check for failed services
+      ansible.builtin.shell: systemctl --failed --no-legend
+      register: failed_services
+    
+    - name: Analyze error patterns
+      ansible.builtin.shell: |
+        grep -i "{{ item.pattern }}" /var/log/system-analysis/*.log || echo "No matches found"
+      register: pattern_matches
+      loop: "{{ log_analysis_patterns }}"
+      ignore_errors: true
+    
+    - name: Fix failed services
+      block:
+        - name: Restart failed services
+          ansible.builtin.systemd:
+            name: "{{ item }}"
+            state: restarted
+          loop: "{{ failed_services.stdout_lines }}"
+          when: failed_services.stdout_lines | length > 0
+          ignore_errors: true
+          
+        - name: Check if services are now running
+          ansible.builtin.systemd:
+            name: "{{ item }}"
+          register: service_status
+          loop: "{{ failed_services.stdout_lines }}"
+          when: failed_services.stdout_lines | length > 0
+          ignore_errors: true
+    
+    - name: Clean up disk space if needed
+      block:
+        - name: Check if disk usage is high
+          ansible.builtin.set_fact:
+            high_disk_usage: "{{ disk_usage.stdout | regex_search('(9[0-9]|100)%') }}"
+            
+        - name: Clean package cache
+          ansible.builtin.dnf:
+            autoremove: true
+            update_cache: false
+          when: high_disk_usage and ansible_os_family == 'RedHat'
+          
+        - name: Clean DNF cache
+          ansible.builtin.command: dnf clean all
+          when: high_disk_usage and ansible_os_family == 'RedHat'
+          
+        - name: Clean temporary files
+          ansible.builtin.shell: |
+            find /tmp -type f -atime +7 -delete 2>/dev/null || true
+            find /var/tmp -type f -atime +7 -delete 2>/dev/null || true
+          when: high_disk_usage
+    
+    - name: Optimize memory if needed
+      block:
+        - name: Drop caches to free memory
+          ansible.builtin.shell: |
+            sync
+            echo 3 > /proc/sys/vm/drop_caches
+          when: memory_usage.stdout | regex_search('([8-9][0-9]|100)%.*used')
+          
+        - name: Restart memory-intensive services
+          ansible.builtin.systemd:
+            name: "{{ item }}"
+            state: restarted
+          loop:
+            - httpd
+            - nginx
+            - mysql
+            - postgresql
+          ignore_errors: true
+          when: memory_usage.stdout | regex_search('([8-9][0-9]|100)%.*used')
+    
+    - name: Fix common permission issues
+      block:
+        - name: Fix /tmp permissions
+          ansible.builtin.file:
+            path: /tmp
+            mode: '1777'
+            state: directory
+            
+        - name: Fix log directory permissions
+          ansible.builtin.file:
+            path: /var/log
+            mode: '0755'
+            state: directory
+            
+        - name: Fix common service directories
+          ansible.builtin.file:
+            path: "{{ item }}"
+            mode: '0755'
+            state: directory
+          loop:
+            - /var/run
+            - /var/lib
+            - /etc/systemd/system
+          ignore_errors: true
+    
+    - name: Network connectivity checks
+      block:
+        - name: Test DNS resolution
+          ansible.builtin.command: nslookup google.com
+          register: dns_test
+          ignore_errors: true
+          
+        - name: Test external connectivity
+          ansible.builtin.uri:
+            url: https://google.com
+            method: GET
+            timeout: 10
+          register: connectivity_test
+          ignore_errors: true
+          
+        - name: Restart network service if issues found
+          ansible.builtin.systemd:
+            name: NetworkManager
+            state: restarted
+          when: dns_test.rc != 0 or connectivity_test.status != 200
+    
+    - name: Generate system health report
+      ansible.builtin.copy:
+        content: |
+          System Health Analysis Report
+          Generated: {{ ansible_date_time.iso8601 }}
+          Hostname: {{ ansible_hostname }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          
+          === DISK USAGE ===
+          {{ disk_usage.stdout }}
+          
+          === MEMORY USAGE ===
+          {{ memory_usage.stdout }}
+          
+          === FAILED SERVICES ===
+          {% if failed_services.stdout_lines | length > 0 %}
+          {% for service in failed_services.stdout_lines %}
+          - {{ service }}
+          {% endfor %}
+          {% else %}
+          No failed services found
+          {% endif %}
+          
+          === ERROR PATTERN ANALYSIS ===
+          {% for result in pattern_matches.results %}
+          {{ log_analysis_patterns[loop.index0].description }}:
+          {{ result.stdout | default('No issues found') }}
+          
+          {% endfor %}
+          
+          === NETWORK CONNECTIVITY ===
+          DNS Test: {{ 'PASS' if dns_test.rc == 0 else 'FAIL' }}
+          External Connectivity: {{ 'PASS' if connectivity_test.status == 200 else 'FAIL' }}
+          
+          === RECOMMENDATIONS ===
+          {% if high_disk_usage %}
+          - Disk usage is high - cleanup has been performed
+          {% endif %}
+          {% if memory_usage.stdout | regex_search('([8-9][0-9]|100)%.*used') %}
+          - Memory usage is high - optimization performed
+          {% endif %}
+          {% if failed_services.stdout_lines | length > 0 %}
+          - Failed services detected - restart attempted
+          {% endif %}
+        dest: /var/log/system-analysis/health_report_{{ ansible_date_time.epoch }}.txt
+        mode: '0644'
+    
+    - name: Display analysis summary
+      ansible.builtin.debug:
+        msg: |
+          System Analysis Complete!
+          
+          Failed Services: {{ failed_services.stdout_lines | length }}
+          Disk Usage Critical: {{ 'YES' if high_disk_usage else 'NO' }}
+          Memory Usage High: {{ 'YES' if memory_usage.stdout | regex_search('([8-9][0-9]|100)%.*used') else 'NO' }}
+          Network Connectivity: {{ 'OK' if connectivity_test.status == 200 else 'ISSUES' }}
+          
+          Full report saved to: /var/log/system-analysis/health_report_{{ ansible_date_time.epoch }}.txt
