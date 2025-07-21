@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Organize package files by OS version and architecture
-# This script organizes packages in /run/media/sgallego/ by OS and architecture
+# This script organizes packages in the user's media directory by OS and architecture
 
 set -euo pipefail
 

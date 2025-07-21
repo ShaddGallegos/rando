@@ -1,9 +1,14 @@
 # fix_git_permissions.sh
 #!/bin/bash
 
-BASE_DIR="/home/sgallego/Downloads/GIT"
-USER_NAME="sgallego"
-GROUP_NAME="sgallego"
+# Get current user and group dynamically
+CURRENT_USER=$(whoami)
+CURRENT_GROUP=$(id -gn)
+
+# Use environment variables or defaults
+BASE_DIR="${GIT_BASE_DIR:-$HOME/Downloads/GIT}"
+USER_NAME="${GIT_USER:-$CURRENT_USER}"
+GROUP_NAME="${GIT_GROUP:-$CURRENT_GROUP}"
 
 echo "🔍 Searching for Git repositories in $BASE_DIR..."
 
