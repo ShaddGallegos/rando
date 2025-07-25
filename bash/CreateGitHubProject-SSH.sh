@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Enhanced GitHub Project Creation Script
-# Handles authentication, error checking, and modern Git practices
+# Enhanced GitHub Project Creation Script (SSH Version)
+# Uses SSH authentication for better security
 
 set -euo pipefail
 
@@ -18,7 +18,7 @@ print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 echo "=========================================="
-echo "    GitHub Project Creation Tool"
+echo "    GitHub Project Creation Tool (SSH)"
 echo "=========================================="
 echo ""
 echo "GitHub Instance Configuration:"
@@ -30,6 +30,7 @@ read -p "Enter GitHub domain (press Enter for github.com): " github_url
 if [[ -z "$github_url" ]]; then
     github_url="github.com"
     api_url="https://api.github.com"
+    ssh_host="git@github.com"
 else
     # Remove protocol if provided
     github_url=${github_url#https://}
@@ -46,20 +47,23 @@ else
         github_url=$(echo "$github_url" | cut -d'/' -f1)
     fi
     
-    # Set API URL based on GitHub instance
+    # Set API URL and SSH host based on GitHub instance
     if [[ "$github_url" == "github.com" ]]; then
         api_url="https://api.github.com"
+        ssh_host="git@github.com"
     else
         api_url="https://$github_url/api/v3"
+        ssh_host="git@$github_url"
     fi
 fi
 
-print_status "Using GitHub instance: ${BLUE}$github_url${NC}"
-print_status "API endpoint: ${BLUE}$api_url${NC}"
+print_status "Using GitHub instance: $github_url"
+print_status "API endpoint: $api_url"
+print_status "SSH host: $ssh_host"
 
 read -p "Enter full path to your local project directory: " project_path
 read -p "Enter your GitHub username: " gh_user
-read -s -p "Enter your GitHub personal access token: " gh_token
+read -s -p "Enter your GitHub personal access token (for API only): " gh_token
 echo ""
 
 # Validate inputs
@@ -70,7 +74,21 @@ fi
 
 # Extract repo name from the last folder in the path
 repo_name=$(basename "$project_path")
-repo_url="https://${gh_token}@${github_url}/$gh_user/$repo_name.git"
+repo_url="$ssh_host:$gh_user/$repo_name.git"
+
+# Check if SSH key is available
+if ! ssh -T "$ssh_host" 2>&1 | grep -q "successfully authenticated"; then
+    print_warning "SSH key not configured for $github_url."
+    print_status "To set up SSH authentication:"
+    print_status "1. Generate SSH key: ssh-keygen -t ed25519 -C 'your_email@example.com'"
+    print_status "2. Add to SSH agent: ssh-add ~/.ssh/id_ed25519"
+    print_status "3. Add public key to $github_url: https://$github_url/settings/keys"
+    print_status ""
+    print_status "For now, falling back to HTTPS with token..."
+    repo_url="https://${gh_token}@${github_url}/$gh_user/$repo_name.git"
+else
+    print_success "SSH authentication available!"
+fi
 
 # Navigate to the project directory
 print_status "Navigating to project directory: $project_path"
@@ -86,6 +104,15 @@ if [ ! -d ".git" ]; then
     git config init.defaultBranch main
 else
     print_status "Git repository already exists"
+fi
+
+# Set up Git configuration if not set
+if [[ -z "$(git config user.name 2>/dev/null || true)" ]]; then
+    print_status "Setting up Git user configuration..."
+    read -p "Enter your Git user name: " git_name
+    read -p "Enter your Git email: " git_email
+    git config user.name "$git_name"
+    git config user.email "$git_email"
 fi
 
 # Check if there are any files to commit
@@ -108,9 +135,11 @@ fi
 
 # Create repo on GitHub using API
 print_status "Creating GitHub repository: $repo_name"
-response=$(curl -s -w "%{http_code}" -u "$gh_user:$gh_token" \
+response=$(curl -s -w "%{http_code}" \
+    -H "Authorization: token $gh_token" \
+    -H "Accept: application/vnd.github.v3+json" \
     "$api_url/user/repos" \
-    -d "{\"name\":\"$repo_name\",\"private\":false}" \
+    -d "{\"name\":\"$repo_name\",\"private\":false,\"description\":\"Automated upload of $repo_name project\"}" \
     -o /tmp/github_response.json)
 
 http_code="${response: -3}"
@@ -146,9 +175,6 @@ if [[ "$current_branch" != "main" ]]; then
     print_status "Switching to main branch..."
     git branch -M main
 fi
-
-# Configure Git credentials for this session
-export GIT_ASKPASS=/bin/echo
 
 # Check if repository exists and handle synchronization
 repo_exists=false
@@ -203,14 +229,10 @@ if [[ "$repo_exists" == true ]]; then
                         read -p "Are you sure? (y/N): " confirm
                         if [[ "$confirm" =~ ^[Yy]$ ]]; then
                             print_status "Force pushing to GitHub..."
-                            if git push -f origin main 2>/dev/null || (git config credential.helper store && echo "https://${gh_user}:${gh_token}@${github_url}" > ~/.git-credentials && git push -f origin main); then
+                            if git push -f origin main; then
                                 print_success "Successfully force pushed to GitHub!"
-                                rm -f ~/.git-credentials 2>/dev/null
-                                git config --unset credential.helper 2>/dev/null || true
                             else
                                 print_error "Failed to force push to GitHub"
-                                rm -f ~/.git-credentials 2>/dev/null
-                                git config --unset credential.helper 2>/dev/null || true
                                 exit 1
                             fi
                         else
@@ -245,52 +267,50 @@ if [[ "$repo_exists" == true ]]; then
         fi
     else
         print_warning "Failed to fetch remote information. Trying alternative authentication..."
-        git config credential.helper store
-        echo "https://${gh_user}:${gh_token}@${github_url}" > ~/.git-credentials
-        
-        if git fetch origin 2>/dev/null; then
-            print_success "Successfully fetched with alternative authentication"
-            # Repeat the analysis with the alternative method
-            if git ls-remote --heads origin main | grep -q main; then
-                behind_count=$(git rev-list --count HEAD..origin/main 2>/dev/null || echo "0")
-                ahead_count=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo "0")
-                
-                if [[ "$behind_count" -gt 0 ]]; then
-                    print_status "Pulling remote changes..."
-                    git pull origin main --no-edit
+        # For SSH version, if SSH fails, try HTTPS with token
+        if [[ "$repo_url" == git@* ]]; then
+            print_status "SSH fetch failed, trying HTTPS with token..."
+            temp_url="https://${gh_token}@${github_url}/$gh_user/$repo_name.git"
+            git remote set-url origin "$temp_url"
+            
+            if git fetch origin 2>/dev/null; then
+                print_success "Successfully fetched with HTTPS authentication"
+                # Analyze differences with HTTPS
+                if git ls-remote --heads origin main | grep -q main; then
+                    behind_count=$(git rev-list --count HEAD..origin/main 2>/dev/null || echo "0")
+                    ahead_count=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo "0")
+                    
+                    if [[ "$behind_count" -gt 0 ]]; then
+                        print_status "Pulling remote changes..."
+                        git pull origin main --no-edit
+                    fi
                 fi
+                # Switch back to original URL for push
+                git remote set-url origin "$repo_url"
+            else
+                print_warning "Could not fetch remote repository. Proceeding with push..."
+                git remote set-url origin "$repo_url"
             fi
         else
             print_warning "Could not fetch remote repository. Proceeding with push..."
         fi
-        
-        rm -f ~/.git-credentials 2>/dev/null
-        git config --unset credential.helper 2>/dev/null || true
     fi
 fi
 
-# Push to GitHub (or continue push after sync)
+# Push to GitHub
 print_status "Pushing to GitHub..."
-if git push -u origin main 2>/dev/null; then
+if git push -u origin main; then
     print_success "Successfully pushed to GitHub!"
 else
-    print_warning "Push failed with token in URL. Trying alternative method..."
-    # Try using credential helper
-    git config credential.helper store
-    echo "https://${gh_user}:${gh_token}@${github_url}" > ~/.git-credentials
-    
-    if git push -u origin main; then
-        print_success "Successfully pushed to GitHub!"
-        # Clean up credentials
-        rm -f ~/.git-credentials
-        git config --unset credential.helper
+    print_error "Failed to push to GitHub."
+    if [[ "$repo_url" == git@* ]]; then
+        print_error "SSH push failed. Please check your SSH key configuration."
+        print_status "You can test SSH with: ssh -T $ssh_host"
     else
-        print_error "Failed to push to GitHub. Please check your token permissions."
+        print_error "HTTPS push failed. Please check your token permissions."
         print_error "Make sure your token has 'repo' scope enabled."
-        rm -f ~/.git-credentials
-        git config --unset credential.helper 2>/dev/null || true
-        exit 1
     fi
+    exit 1
 fi
 
 # Clean up
@@ -299,5 +319,19 @@ rm -f /tmp/github_response.json
 echo ""
 echo "=========================================="
 print_success "Project '$repo_name' has been successfully pushed to GitHub!"
-echo "Repository URL: ${BLUE}https://$github_url/$gh_user/$repo_name${NC}"
+echo "Repository URL: https://$github_url/$gh_user/$repo_name"
+echo "SSH Clone URL: $ssh_host:$gh_user/$repo_name.git"
+echo "HTTPS Clone URL: https://$github_url/$gh_user/$repo_name.git"
 echo "=========================================="
+
+# Optional: Open the repository in browser
+read -p "Do you want to open the repository in your browser? (y/N): " open_browser
+if [[ "$open_browser" =~ ^[Yy]$ ]]; then
+    if command -v xdg-open >/dev/null; then
+        xdg-open "https://$github_url/$gh_user/$repo_name"
+    elif command -v firefox >/dev/null; then
+        firefox "https://$github_url/$gh_user/$repo_name" &
+    else
+        print_status "Please manually open: https://$github_url/$gh_user/$repo_name"
+    fi
+fi

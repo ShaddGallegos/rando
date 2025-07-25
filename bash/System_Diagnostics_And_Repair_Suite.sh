@@ -23,33 +23,33 @@ log() {
 }
 
 print_header() {
-    echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║            System Diagnostics And Repair Suite              ║${NC}"
-    echo -e "${PURPLE}║        Comprehensive System Troubleshooting Tool            ║${NC}"
-    echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo
+    echo
+    echo
+    echo
     echo ""
 }
 
 show_main_menu() {
-    echo -e "${CYAN}Select diagnostic and repair option:${NC}"
+    echo
     echo ""
-    echo "🔍 DIAGNOSTICS:"
-    echo "1. 📊 Full System Diagnostic Report"
-    echo "2. ❄️  System Freeze Analysis"
-    echo "3. 🖥️  Hardware & Driver Status Check"
-    echo "4. 💾 Memory & Storage Analysis"
+    echo " DIAGNOSTICS:"
+    echo "1.  Full System Diagnostic Report"
+    echo "2.   System Freeze Analysis"
+    echo "3.   Hardware & Driver Status Check"
+    echo "4.  Memory & Storage Analysis"
     echo ""
-    echo "🔧 REPAIRS:"
-    echo "5. 🚨 Fix System Freezes & Hung Tasks"
-    echo "6. 💿 Disk Scan & Filesystem Repair"
-    echo "7. 🔄 I/O Performance Optimization"
-    echo "8. 🛠️  General System Error Fixes"
+    echo " REPAIRS:"
+    echo "5.  Fix System Freezes & Hung Tasks"
+    echo "6.  Disk Scan & Filesystem Repair"
+    echo "7.  I/O Performance Optimization"
+    echo "8.   General System Error Fixes"
     echo ""
-    echo "⚙️  ADVANCED:"
-    echo "9. 🔍 Custom Diagnostic Session"
-    echo "10. 📋 Generate System Health Report"
-    echo "11. 🔄 Reset All System Configurations"
-    echo "12. 🚪 Exit"
+    echo "  ADVANCED:"
+    echo "9.  Custom Diagnostic Session"
+    echo "10.  Generate System Health Report"
+    echo "11.  Reset All System Configurations"
+    echo "12.  Exit"
     echo ""
     read -p "Enter your choice (1-12): " choice
 }
@@ -502,13 +502,13 @@ generate_health_report() {
 EOF
     
     log "${GREEN}Health report generated: $report_file${NC}"
-    echo -e "${CYAN}You can open the report with: firefox $report_file${NC}"
+    echo
 }
 
 reset_system_configurations() {
     log "${BLUE}=== Resetting System Configurations ===${NC}"
     
-    echo -e "${RED}WARNING: This will reset various system configurations!${NC}"
+    echo
     read -p "Are you sure you want to continue? (y/N): " -n 1 -r
     echo
     
@@ -562,11 +562,11 @@ main() {
             11) reset_system_configurations ;;
             12) 
                 log "${GREEN}Exiting System Diagnostics Suite${NC}"
-                echo -e "${GREEN}Log file saved to: $LOG_FILE${NC}"
+                echo
                 exit 0
                 ;;
             *)
-                echo -e "${RED}Invalid choice. Please try again.${NC}"
+                echo
                 ;;
         esac
         
@@ -578,9 +578,9 @@ main() {
 
 # Check if running as root for some operations
 if [ "$EUID" -eq 0 ]; then
-    echo -e "${YELLOW}Running as root - all repair functions available${NC}"
+    echo
 else
-    echo -e "${YELLOW}Running as user - some repair functions will require sudo${NC}"
+    echo
 fi
 
 main "$@"

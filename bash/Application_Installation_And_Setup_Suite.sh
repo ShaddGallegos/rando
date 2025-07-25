@@ -24,39 +24,39 @@ log() {
 }
 
 print_header() {
-    echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║        Application Installation And Setup Suite             ║${NC}"
-    echo -e "${PURPLE}║    Comprehensive Application Management & Configuration      ║${NC}"
-    echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo
+    echo
+    echo
+    echo
     echo ""
 }
 
 show_main_menu() {
-    echo -e "${CYAN}Select application installation & setup option:${NC}"
+    echo
     echo ""
-    echo "📱 DEVELOPMENT TOOLS:"
-    echo "1. 🆚 Install VS Code & Extensions"
-    echo "2. 📦 Setup Flatpak & Applications"
-    echo "3. 🐳 Complete Podman & Container Setup"
-    echo "4. 🛠️  Install Common Development Tools"
+    echo " DEVELOPMENT TOOLS:"
+    echo "1.  Install VS Code & Extensions"
+    echo "2.  Setup Flatpak & Applications"
+    echo "3.  Complete Podman & Container Setup"
+    echo "4.   Install Common Development Tools"
     echo ""
-    echo "🎨 PRODUCTIVITY & MEDIA:"
-    echo "5. 📝 Configure LibreOffice for MS Office"
-    echo "6. 🔤 Font Installation & Management"
-    echo "7. 🎵 Multimedia Tools Setup"
-    echo "8. 🖼️  Graphics & Design Tools"
+    echo " PRODUCTIVITY & MEDIA:"
+    echo "5.  Configure LibreOffice for MS Office"
+    echo "6.  Font Installation & Management"
+    echo "7.  Multimedia Tools Setup"
+    echo "8.   Graphics & Design Tools"
     echo ""
-    echo "🐳 CONTAINER MANAGEMENT:"
-    echo "9. 📦 Container Image Manager"
-    echo "10. 🔧 Container Registry Setup"
-    echo "11. 🚀 Container Development Environment"
-    echo "12. 🔍 Container Troubleshooting Tools"
+    echo " CONTAINER MANAGEMENT:"
+    echo "9.  Container Image Manager"
+    echo "10.  Container Registry Setup"
+    echo "11.  Container Development Environment"
+    echo "12.  Container Troubleshooting Tools"
     echo ""
-    echo "⚙️  SYSTEM INTEGRATION:"
-    echo "13. 🔗 Application Desktop Integration"
-    echo "14. 🎯 Custom Application Profiles"
-    echo "15. 📋 Application Backup & Restore"
-    echo "16. 🚪 Exit"
+    echo "  SYSTEM INTEGRATION:"
+    echo "13.  Application Desktop Integration"
+    echo "14.  Custom Application Profiles"
+    echo "15.  Application Backup & Restore"
+    echo "16.  Exit"
     echo ""
     read -p "Enter your choice (1-16): " choice
 }
@@ -1424,11 +1424,11 @@ main() {
             15) application_backup_restore ;;
             16) 
                 log "${GREEN}Exiting Application Installation Suite${NC}"
-                echo -e "${GREEN}Log file saved to: $LOG_FILE${NC}"
+                echo
                 exit 0
                 ;;
             *)
-                echo -e "${RED}Invalid choice. Please try again.${NC}"
+                echo
                 ;;
         esac
         

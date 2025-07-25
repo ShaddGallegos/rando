@@ -1,4 +1,22 @@
 #!/bin/bash
+# User-configurable variables - modify as needed
+USER="${USER}"
+USER_EMAIL="${USER}@${COMPANY_DOMAIN:-example.com}"
+COMPANY_NAME="${COMPANY_NAME:-Your Company}"
+COMPANY_DOMAIN="${COMPANY_DOMAIN:-example.com}"
+
+# User-configurable variables - modify as needed
+USER="${USER}"
+USER_EMAIL="${USER}@${COMPANY_DOMAIN:-example.com}"
+COMPANY_NAME="${COMPANY_NAME:-Your Company}"
+COMPANY_DOMAIN="${COMPANY_DOMAIN:-example.com}"
+
+# User-configurable variables - modify as needed
+USER="${USER}"
+USER_EMAIL="${USER}@${COMPANY_DOMAIN:-example.com}"
+COMPANY_NAME="${COMPANY_NAME:-Your Company}"
+COMPANY_DOMAIN="${COMPANY_DOMAIN:-example.com}"
+
 
 # Master Script Suite Launcher
 # Central launcher for all consolidated script suites
@@ -20,38 +38,38 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 print_header() {
     clear
-    echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║                Master Script Suite Launcher                 ║${NC}"
-    echo -e "${PURPLE}║         Unified System Management & Administration          ║${NC}"
-    echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo
+    echo
+    echo
+    echo
     echo ""
 }
 
 show_main_menu() {
-    echo -e "${CYAN}Select a script suite to launch:${NC}"
+    echo
     echo ""
-    echo "🔧 SYSTEM ADMINISTRATION:"
-    echo "1. 🩺 System Diagnostics & Repair Suite"
-    echo "2. 📺 Display & Graphics Management Suite"
-    echo "3. 📦 Package Organization & Migration Suite"
-    echo "4. 🛡️  Security & Antivirus Management Suite"
+    echo " SYSTEM ADMINISTRATION:"
+    echo "1.  System Diagnostics & Repair Suite"
+    echo "2.  Display & Graphics Management Suite"
+    echo "3.  Package Organization & Migration Suite"
+    echo "4.   Security & Antivirus Management Suite"
     echo ""
-    echo "💻 DEVELOPMENT & APPLICATIONS:"
-    echo "5. 📱 Application Installation & Setup Suite"
-    echo "6. 🔐 Fingerprint Authentication Management Suite"
-    echo "7. 🖥️  Development Environment Configuration Suite"
+    echo " DEVELOPMENT & APPLICATIONS:"
+    echo "5.  Application Installation & Setup Suite"
+    echo "6.  Fingerprint Authentication Management Suite"
+    echo "7.   Development Environment Configuration Suite"
     echo ""
-    echo "📊 MONITORING & FILE MANAGEMENT:"
-    echo "8. ⚡ System Performance & Monitoring Suite"
-    echo "9. 💿 File & ISO Management Suite"
+    echo " MONITORING & FILE MANAGEMENT:"
+    echo "8.  System Performance & Monitoring Suite"
+    echo "9.  File & ISO Management Suite"
     echo ""
-    echo "⚙️  ADDITIONAL TOOLS:"
-    echo "10. 🌐 Network & Repository Management Suite"
-    echo "11. 🖥️  Terminal Session & System Management Suite"
+    echo "  ADDITIONAL TOOLS:"
+    echo "10.  Network & Repository Management Suite"
+    echo "11.   Terminal Session & System Management Suite"
     echo ""
-    echo "12. ℹ️  Show Suite Information"
-    echo "13. 🔄 Update All Suites"
-    echo "14. 🚪 Exit"
+    echo "12. ℹ  Show Suite Information"
+    echo "13.  Update All Suites"
+    echo "14.  Exit"
     echo ""
     read -p "Enter your choice (1-14): " choice
 }
@@ -61,16 +79,16 @@ launch_suite() {
     local suite_name="$2"
     
     if [ -f "$SCRIPT_DIR/$suite_file" ]; then
-        echo -e "${GREEN}Launching $suite_name...${NC}"
+        echo
         bash "$SCRIPT_DIR/$suite_file"
     else
-        echo -e "${RED}Error: $suite_file not found in $SCRIPT_DIR${NC}"
+        echo
         read -p "Press Enter to continue..."
     fi
 }
 
 show_suite_information() {
-    echo -e "${BLUE}=== Script Suite Information ===${NC}"
+    echo
     echo ""
     
     local suites=(
@@ -97,7 +115,7 @@ show_suite_information() {
             local status="${RED}Missing${NC}"
         fi
         
-        echo -e "${YELLOW}${suite_file}${NC}"
+        echo
         echo -e "  Description: $description"
         echo -e "  Size: $size"
         echo -e "  Status: $status"
@@ -108,7 +126,7 @@ show_suite_information() {
 }
 
 update_all_suites() {
-    echo -e "${BLUE}=== Updating All Suites ===${NC}"
+    echo
     echo ""
     
     # Make all suite files executable
@@ -116,13 +134,13 @@ update_all_suites() {
     for suite in "$SCRIPT_DIR"/*_Suite.sh; do
         if [ -f "$suite" ]; then
             chmod +x "$suite"
-            echo -e "${GREEN}Updated permissions: $(basename "$suite")${NC}"
+            echo
             ((updated_count++))
         fi
     done
     
     echo ""
-    echo -e "${GREEN}Updated $updated_count script suites${NC}"
+    echo
     read -p "Press Enter to continue..."
 }
 
@@ -172,12 +190,12 @@ main() {
                 update_all_suites
                 ;;
             14)
-                echo -e "${GREEN}Thank you for using the Master Script Suite Launcher!${NC}"
-                echo -e "${BLUE}All system management tools are now organized into comprehensive suites.${NC}"
+                echo
+                echo
                 exit 0
                 ;;
             *)
-                echo -e "${RED}Invalid choice. Please try again.${NC}"
+                echo
                 sleep 2
                 ;;
         esac

@@ -23,39 +23,39 @@ log() {
 }
 
 print_header() {
-    echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║              File And ISO Management Suite                   ║${NC}"
-    echo -e "${PURPLE}║      Comprehensive File Operations & Data Management        ║${NC}"
-    echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo
+    echo
+    echo
+    echo
     echo ""
 }
 
 show_main_menu() {
-    echo -e "${CYAN}Select file management option:${NC}"
+    echo
     echo ""
-    echo "💿 ISO & IMAGE MANAGEMENT:"
-    echo "1. 🔍 Find & Organize ISO Files"
-    echo "2. 💿 ISO File Operations"
-    echo "3. 🖼️  Image File Management"
-    echo "4. 🗜️  Archive & Compression Tools"
+    echo " ISO & IMAGE MANAGEMENT:"
+    echo "1.  Find & Organize ISO Files"
+    echo "2.  ISO File Operations"
+    echo "3.   Image File Management"
+    echo "4.   Archive & Compression Tools"
     echo ""
-    echo "📁 FILE ORGANIZATION:"
-    echo "5. 🗂️  Smart File Organizer"
-    echo "6. 🔄 Duplicate File Finder"
-    echo "7. 📊 Disk Space Analysis"
-    echo "8. 🏷️  File Tagging & Metadata"
+    echo " FILE ORGANIZATION:"
+    echo "5.   Smart File Organizer"
+    echo "6.  Duplicate File Finder"
+    echo "7.  Disk Space Analysis"
+    echo "8.   File Tagging & Metadata"
     echo ""
-    echo "💾 BACKUP & MIGRATION:"
-    echo "9. 📦 Backup Manager"
-    echo "10. 🚛 Data Migration Tools"
-    echo "11. 🔄 Sync & Replication"
-    echo "12. 📋 Restore Operations"
+    echo " BACKUP & MIGRATION:"
+    echo "9.  Backup Manager"
+    echo "10.  Data Migration Tools"
+    echo "11.  Sync & Replication"
+    echo "12.  Restore Operations"
     echo ""
-    echo "🔧 ADVANCED OPERATIONS:"
-    echo "13. 🔍 Advanced Search Tools"
-    echo "14. 🔐 File Security & Permissions"
-    echo "15. 📈 File System Maintenance"
-    echo "16. 🚪 Exit"
+    echo " ADVANCED OPERATIONS:"
+    echo "13.  Advanced Search Tools"
+    echo "14.  File Security & Permissions"
+    echo "15.  File System Maintenance"
+    echo "16.  Exit"
     echo ""
     read -p "Enter your choice (1-16): " choice
 }
@@ -115,11 +115,11 @@ find_organize_iso_files() {
     log "${BLUE}=== Find & Organize ISO Files ===${NC}"
     
     echo "ISO file search and organization options:"
-    echo "1. 🔍 Find all ISO files"
-    echo "2. 📁 Organize ISOs by type"
-    echo "3. 🗂️  Move ISOs to destination"
-    echo "4. 📊 Analyze ISO collection"
-    echo "5. 🧹 Clean up duplicate ISOs"
+    echo "1.  Find all ISO files"
+    echo "2.  Organize ISOs by type"
+    echo "3.   Move ISOs to destination"
+    echo "4.  Analyze ISO collection"
+    echo "5.  Clean up duplicate ISOs"
     read -p "Choose option (1-5): " iso_choice
     
     case $iso_choice in
@@ -411,11 +411,11 @@ iso_file_operations() {
     log "${BLUE}=== ISO File Operations ===${NC}"
     
     echo "ISO file operations:"
-    echo "1. 🔍 Examine ISO contents"
-    echo "2. 🗜️  Extract ISO files"
-    echo "3. 💿 Mount/Unmount ISO"
-    echo "4. ✅ Verify ISO integrity"
-    echo "5. 🔧 Create ISO from directory"
+    echo "1.  Examine ISO contents"
+    echo "2.   Extract ISO files"
+    echo "3.  Mount/Unmount ISO"
+    echo "4.  Verify ISO integrity"
+    echo "5.  Create ISO from directory"
     read -p "Choose operation (1-5): " iso_op_choice
     
     case $iso_op_choice in
@@ -643,11 +643,11 @@ main() {
             15) filesystem_maintenance ;;
             16) 
                 log "${GREEN}Exiting File And ISO Management Suite${NC}"
-                echo -e "${GREEN}Log file saved to: $LOG_FILE${NC}"
+                echo
                 exit 0
                 ;;
             *)
-                echo -e "${RED}Invalid choice. Please try again.${NC}"
+                echo
                 ;;
         esac
         

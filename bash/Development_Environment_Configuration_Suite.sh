@@ -23,39 +23,39 @@ log() {
 }
 
 print_header() {
-    echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║        Development Environment Configuration Suite          ║${NC}"
-    echo -e "${PURPLE}║      Comprehensive Dev Tools & Environment Management       ║${NC}"
-    echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo
+    echo
+    echo
+    echo
     echo ""
 }
 
 show_main_menu() {
-    echo -e "${CYAN}Select development environment option:${NC}"
+    echo
     echo ""
-    echo "🛠️ DEVELOPMENT TOOLS:"
-    echo "1. 🔧 Programming Languages Setup"
-    echo "2. 💻 IDE & Editor Configuration"
-    echo "3. 📚 Package Managers & Libraries"
-    echo "4. 🔄 Version Control Systems"
+    echo " DEVELOPMENT TOOLS:"
+    echo "1.  Programming Languages Setup"
+    echo "2.  IDE & Editor Configuration"
+    echo "3.  Package Managers & Libraries"
+    echo "4.  Version Control Systems"
     echo ""
-    echo "🌐 WEB DEVELOPMENT:"
-    echo "5. 🌍 Web Development Stack"
-    echo "6. 📦 Node.js & NPM Ecosystem"
-    echo "7. 🐍 Python Development Environment"
-    echo "8. ☕ Java Development Kit"
+    echo " WEB DEVELOPMENT:"
+    echo "5.  Web Development Stack"
+    echo "6.  Node.js & NPM Ecosystem"
+    echo "7.  Python Development Environment"
+    echo "8.  Java Development Kit"
     echo ""
-    echo "🐳 CONTAINERIZATION & VIRTUALIZATION:"
-    echo "9. 🐳 Docker Development Setup"
-    echo "10. ☸️ Kubernetes Tools"
-    echo "11. 📦 Virtual Environment Management"
-    echo "12. 🔧 DevOps Tools & CI/CD"
+    echo " CONTAINERIZATION & VIRTUALIZATION:"
+    echo "9.  Docker Development Setup"
+    echo "10.  Kubernetes Tools"
+    echo "11.  Virtual Environment Management"
+    echo "12.  DevOps Tools & CI/CD"
     echo ""
-    echo "⚙️ ENVIRONMENT MANAGEMENT:"
-    echo "13. 🎯 Project Template Manager"
-    echo "14. 🔐 Development Security Tools"
-    echo "15. 📊 Development Monitoring & Analytics"
-    echo "16. 🚪 Exit"
+    echo " ENVIRONMENT MANAGEMENT:"
+    echo "13.  Project Template Manager"
+    echo "14.  Development Security Tools"
+    echo "15.  Development Monitoring & Analytics"
+    echo "16.  Exit"
     echo ""
     read -p "Enter your choice (1-16): " choice
 }
@@ -113,13 +113,13 @@ programming_languages_setup() {
     log "${BLUE}=== Programming Languages Setup ===${NC}"
     
     echo "Programming language installation options:"
-    echo "1. 🐍 Python Development Environment"
-    echo "2. 📄 Node.js & JavaScript Environment"
-    echo "3. ☕ Java Development Kit"
-    echo "4. 🦀 Rust Programming Language"
-    echo "5. 🐹 Go Programming Language"
-    echo "6. 💎 Ruby Development Environment"
-    echo "7. ⚡ Multiple Languages (Full Stack)"
+    echo "1.  Python Development Environment"
+    echo "2.  Node.js & JavaScript Environment"
+    echo "3.  Java Development Kit"
+    echo "4.  Rust Programming Language"
+    echo "5.  Go Programming Language"
+    echo "6.  Ruby Development Environment"
+    echo "7.  Multiple Languages (Full Stack)"
     read -p "Choose language setup (1-7): " lang_choice
     
     case $lang_choice in
@@ -393,13 +393,13 @@ ide_editor_configuration() {
     log "${BLUE}=== IDE & Editor Configuration ===${NC}"
     
     echo "IDE and editor setup options:"
-    echo "1. 💻 Visual Studio Code"
-    echo "2. 🧠 IntelliJ IDEA"
-    echo "3. ☕ Eclipse IDE"
-    echo "4. 📝 Vim/Neovim Advanced Setup"
-    echo "5. 📄 Emacs Configuration"
-    echo "6. ⚡ Sublime Text"
-    echo "7. 🌟 Multiple IDEs Setup"
+    echo "1.  Visual Studio Code"
+    echo "2.  IntelliJ IDEA"
+    echo "3.  Eclipse IDE"
+    echo "4.  Vim/Neovim Advanced Setup"
+    echo "5.  Emacs Configuration"
+    echo "6.  Sublime Text"
+    echo "7.  Multiple IDEs Setup"
     read -p "Choose IDE setup (1-7): " ide_choice
     
     case $ide_choice in
@@ -640,11 +640,11 @@ main() {
             15) development_monitoring_analytics ;;
             16) 
                 log "${GREEN}Exiting Development Environment Configuration Suite${NC}"
-                echo -e "${GREEN}Log file saved to: $LOG_FILE${NC}"
+                echo
                 exit 0
                 ;;
             *)
-                echo -e "${RED}Invalid choice. Please try again.${NC}"
+                echo
                 ;;
         esac
         

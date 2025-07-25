@@ -1,4 +1,22 @@
 #!/bin/bash
+# User-configurable variables - modify as needed
+USER="${USER}"
+USER_EMAIL="${USER}@${COMPANY_DOMAIN:-example.com}"
+COMPANY_NAME="${COMPANY_NAME:-Your Company}"
+COMPANY_DOMAIN="${COMPANY_DOMAIN:-example.com}"
+
+# User-configurable variables - modify as needed
+USER="${USER}"
+USER_EMAIL="${USER}@${COMPANY_DOMAIN:-example.com}"
+COMPANY_NAME="${COMPANY_NAME:-Your Company}"
+COMPANY_DOMAIN="${COMPANY_DOMAIN:-example.com}"
+
+# User-configurable variables - modify as needed
+USER="${USER}"
+USER_EMAIL="${USER}@${COMPANY_DOMAIN:-example.com}"
+COMPANY_NAME="${COMPANY_NAME:-Your Company}"
+COMPANY_DOMAIN="${COMPANY_DOMAIN:-example.com}"
+
 
 # Organize package files by OS version and architecture
 # This script organizes packages in the user's media directory by OS and architecture
@@ -401,18 +419,18 @@ display_summary() {
 
 # Main function
 main() {
-    echo -e "${BLUE}Package Organization Script${NC}"
-    echo -e "${BLUE}===========================${NC}"
+    echo
+    echo
     
     # Check if scan directory exists
     if [ ! -d "$SCAN_DIR" ]; then
         log "${RED}Scan directory $SCAN_DIR does not exist!${NC}"
-        echo -e "${RED}Make sure you have mounted media devices.${NC}"
+        echo
         exit 1
     fi
     
     # Show available devices
-    echo -e "${BLUE}Available devices in $SCAN_DIR:${NC}"
+    echo
     if ls -1 "$SCAN_DIR" 2>/dev/null | grep -q .; then
         ls -1 "$SCAN_DIR" 2>/dev/null | while read -r device; do
             echo -e "  ${YELLOW}$device${NC}"
@@ -426,10 +444,10 @@ main() {
     # Check if target device exists
     if [ ! -d "$BASE_DIR" ]; then
         log "${RED}Target device $BASE_DIR does not exist!${NC}"
-        echo -e "${YELLOW}Available devices:${NC}"
+        echo
         ls -1 "$SCAN_DIR" 2>/dev/null
-        echo -e "${YELLOW}Usage: $0 [device_id]${NC}"
-        echo -e "${YELLOW}Example: $0 048E307611AC6D7E${NC}"
+        echo
+        echo
         exit 1
     fi
     
@@ -448,12 +466,12 @@ main() {
     
     # Show options
     echo
-    echo -e "${YELLOW}User: $USER${NC}"
-    echo -e "${YELLOW}Scan Directory: $SCAN_DIR${NC}"
-    echo -e "${YELLOW}Target Device: $BASE_DIR${NC}"
-    echo -e "${YELLOW}Organization Directory: $ORGANIZE_DIR${NC}"
     echo
-    echo -e "${YELLOW}Options:${NC}"
+    echo
+    echo
+    echo
+    echo
+    echo
     echo "1. Organize all package files (default)"
     echo "2. Dry run (show what would be organized)"
     echo "3. Clean up empty directories only"

@@ -23,39 +23,39 @@ log() {
 }
 
 print_header() {
-    echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║       Fingerprint Authentication Management Suite           ║${NC}"
-    echo -e "${PURPLE}║     Comprehensive Biometric Security & Auth Toolkit         ║${NC}"
-    echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo
+    echo
+    echo
+    echo
     echo ""
 }
 
 show_main_menu() {
-    echo -e "${CYAN}Select fingerprint authentication option:${NC}"
+    echo
     echo ""
-    echo "🔧 SETUP & CONFIGURATION:"
-    echo "1. 👆 Install Fingerprint Authentication"
-    echo "2. ⚙️  Configure Biometric Settings"
-    echo "3. 📝 Enroll Fingerprints"
-    echo "4. 🔄 Update Fingerprint Database"
+    echo " SETUP & CONFIGURATION:"
+    echo "1.  Install Fingerprint Authentication"
+    echo "2.   Configure Biometric Settings"
+    echo "3.  Enroll Fingerprints"
+    echo "4.  Update Fingerprint Database"
     echo ""
-    echo "🔍 TESTING & VERIFICATION:"
-    echo "5. 🧪 Test Fingerprint Authentication"
-    echo "6. 🔬 Verify Reader Hardware"
-    echo "7. 📊 Authentication Status Check"
-    echo "8. 🎯 Calibrate Fingerprint Reader"
+    echo " TESTING & VERIFICATION:"
+    echo "5.  Test Fingerprint Authentication"
+    echo "6.  Verify Reader Hardware"
+    echo "7.  Authentication Status Check"
+    echo "8.  Calibrate Fingerprint Reader"
     echo ""
-    echo "🛠️  TROUBLESHOOTING:"
-    echo "9. 🚨 Diagnose Authentication Issues"
-    echo "10. 🔧 Fix Common Problems"
-    echo "11. 🗂️  Reset Fingerprint Configuration"
-    echo "12. 📋 Generate Diagnostic Report"
+    echo "  TROUBLESHOOTING:"
+    echo "9.  Diagnose Authentication Issues"
+    echo "10.  Fix Common Problems"
+    echo "11.   Reset Fingerprint Configuration"
+    echo "12.  Generate Diagnostic Report"
     echo ""
-    echo "🔐 SECURITY MANAGEMENT:"
-    echo "13. 🛡️  Configure Security Policies"
-    echo "14. 👥 Manage User Enrollments"
-    echo "15. 📈 View Authentication Logs"
-    echo "16. 🚪 Exit"
+    echo " SECURITY MANAGEMENT:"
+    echo "13.   Configure Security Policies"
+    echo "14.  Manage User Enrollments"
+    echo "15.  View Authentication Logs"
+    echo "16.  Exit"
     echo ""
     read -p "Enter your choice (1-16): " choice
 }
@@ -600,7 +600,7 @@ enroll_fingerprints() {
             log "Re-enrolling existing fingerprints..."
             
             echo "This will delete existing fingerprints and enroll new ones."
-            echo -e "${YELLOW}WARNING: You will lose access if re-enrollment fails!${NC}"
+            echo
             read -p "Continue? (y/N): " -n 1 -r
             echo
             
@@ -660,11 +660,11 @@ main() {
             15) view_authentication_logs ;;
             16) 
                 log "${GREEN}Exiting Fingerprint Authentication Management Suite${NC}"
-                echo -e "${GREEN}Log file saved to: $LOG_FILE${NC}"
+                echo
                 exit 0
                 ;;
             *)
-                echo -e "${RED}Invalid choice. Please try again.${NC}"
+                echo
                 ;;
         esac
         

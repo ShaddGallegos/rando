@@ -1,4 +1,28 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
+"""
+User-configurable variables - modify as needed
+"""
+import os
+import getpass
+
+# User configuration
+USER = os.getenv('USER', getpass.getuser())
+USER_EMAIL = os.getenv('USER_EMAIL', f"{USER}@{os.getenv('COMPANY_DOMAIN', 'example.com')}")
+COMPANY_NAME = os.getenv('COMPANY_NAME', 'Your Company')
+COMPANY_DOMAIN = os.getenv('COMPANY_DOMAIN', 'example.com')
+
+"""
+User-configurable variables - modify as needed
+"""
+import os
+import getpass
+
+# User configuration
+USER = os.getenv('USER', getpass.getuser())
+USER_EMAIL = os.getenv('USER_EMAIL', f"{USER}@{os.getenv('COMPANY_DOMAIN', 'example.com')}")
+COMPANY_NAME = os.getenv('COMPANY_NAME', 'Your Company')
+COMPANY_DOMAIN = os.getenv('COMPANY_DOMAIN', 'example.com')
+
 
 # Copyright: (c) 2023, Your Name <your.email@example.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
@@ -35,7 +59,7 @@ EXAMPLES = r'''
 
 - name: Get info about a specific image
   podman_image_info:
-    name: registry.redhat.io/ansible-automation-platform-25/ee-minimal-rhel8
+    name: registry.${COMPANY_NAME}.io/ansible-automation-platform-25/ee-minimal-rhel8
   register: specific_image_info
 '''
 
@@ -53,7 +77,7 @@ images:
         names:
             description: Image names and tags
             type: list
-            sample: ["registry.redhat.io/ansible-automation-platform-25/ee-minimal-rhel8:latest"]
+            sample: ["registry.${COMPANY_NAME}.io/ansible-automation-platform-25/ee-minimal-rhel8:latest"]
         created:
             description: When the image was created
             type: str

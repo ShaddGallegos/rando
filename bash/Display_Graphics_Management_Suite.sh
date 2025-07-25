@@ -23,39 +23,39 @@ log() {
 }
 
 print_header() {
-    echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║           Display Graphics Management Suite                 ║${NC}"
-    echo -e "${PURPLE}║     Comprehensive Display & Graphics Configuration Tool     ║${NC}"
-    echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo
+    echo
+    echo
+    echo
     echo ""
 }
 
 show_main_menu() {
-    echo -e "${CYAN}Select display management option:${NC}"
+    echo
     echo ""
-    echo "🖥️  DISPLAY CONFIGURATION:"
-    echo "1. 📺 HDMI Display Setup & Configuration"
-    echo "2. 🔧 Auto-Configure All Displays"
-    echo "3. 🎛️  Custom Display Layout"
-    echo "4. 📐 Display Resolution Management"
+    echo "  DISPLAY CONFIGURATION:"
+    echo "1.  HDMI Display Setup & Configuration"
+    echo "2.  Auto-Configure All Displays"
+    echo "3.   Custom Display Layout"
+    echo "4.  Display Resolution Management"
     echo ""
-    echo "🔍 DIAGNOSTICS:"
-    echo "5. 📊 Display & Graphics Information"
-    echo "6. 🔍 Troubleshoot Display Issues"
-    echo "7. 🎮 Graphics Driver Status"
-    echo "8. 🖼️  Test Display Capabilities"
+    echo " DIAGNOSTICS:"
+    echo "5.  Display & Graphics Information"
+    echo "6.  Troubleshoot Display Issues"
+    echo "7.  Graphics Driver Status"
+    echo "8.   Test Display Capabilities"
     echo ""
-    echo "🔧 REPAIR & OPTIMIZATION:"
-    echo "9. 🚨 Fix Display Problems"
-    echo "10. ⚙️  Graphics Driver Management"
-    echo "11. 🔄 Reset Display Configuration"
-    echo "12. 🎯 Performance Optimization"
+    echo " REPAIR & OPTIMIZATION:"
+    echo "9.  Fix Display Problems"
+    echo "10.   Graphics Driver Management"
+    echo "11.  Reset Display Configuration"
+    echo "12.  Performance Optimization"
     echo ""
-    echo "⚙️  ADVANCED:"
-    echo "13. 🐧 Custom X11 Configuration"
-    echo "14. 🔧 Wayland/X11 Session Management"
-    echo "15. 💾 Backup/Restore Display Settings"
-    echo "16. 🚪 Exit"
+    echo "  ADVANCED:"
+    echo "13.  Custom X11 Configuration"
+    echo "14.  Wayland/X11 Session Management"
+    echo "15.  Backup/Restore Display Settings"
+    echo "16.  Exit"
     echo ""
     read -p "Enter your choice (1-16): " choice
 }
@@ -781,7 +781,7 @@ EOF
 reset_display_configuration() {
     log "${BLUE}=== Resetting Display Configuration ===${NC}"
     
-    echo -e "${RED}WARNING: This will reset all display settings!${NC}"
+    echo
     read -p "Are you sure you want to continue? (y/N): " -n 1 -r
     echo
     
@@ -1109,11 +1109,11 @@ main() {
             15) backup_restore_display_settings ;;
             16) 
                 log "${GREEN}Exiting Display Graphics Management Suite${NC}"
-                echo -e "${GREEN}Log file saved to: $LOG_FILE${NC}"
+                echo
                 exit 0
                 ;;
             *)
-                echo -e "${RED}Invalid choice. Please try again.${NC}"
+                echo
                 ;;
         esac
         

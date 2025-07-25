@@ -28,7 +28,7 @@ def analyze_system_issues(data):
         "summary": {}
     }
     
-    print("🔍 Analyzing system issues from insights data...")
+    print(" Analyzing system issues from insights data...")
     
     if not isinstance(data, dict) or "details" not in data:
         results["critical_issues"].append("Invalid data format - missing 'details' key")
@@ -41,7 +41,7 @@ def analyze_system_issues(data):
         issue_type = issue_data.get("type", "unknown")
         error_key = issue_data.get("error_key", "")
         
-        print(f"📋 Processing issue: {issue_key}")
+        print(f" Processing issue: {issue_key}")
         
         # Handle specific issues
         if "ANSIBLE_ENGINE_TO_CORE_WARN" in error_key:
@@ -106,7 +106,7 @@ def generate_fix_commands(results):
     """
     commands = []
     
-    print("\n🔧 Generating fix commands...")
+    print("\n Generating fix commands...")
     
     # Generate commands for each issue
     for issue in results["critical_issues"]:
@@ -132,7 +132,7 @@ def generate_fix_commands(results):
 
 def main():
     """Main function to run the system fixes analysis"""
-    print("🚀 Python System Fixes - Red Hat Insights Analysis")
+    print(" Python System Fixes - Red Hat Insights Analysis")
     print("=" * 50)
     
     # Sample input JSON data
@@ -174,29 +174,29 @@ def main():
 # Fix suggestions
 def suggest_fixes(details):
     for key, issue in details.items():
-        print(f"\n🔍 Issue: {key}")
+        print(f"\n Issue: {key}")
         error_key = issue.get("error_key", "Unknown")
 
         if error_key == "ANSIBLE_ENGINE_TO_CORE_WARN":
-            print("⚠️ Ansible Engine is deprecated in favor of Ansible Core.")
-            print(f"➡️ Installed version: {issue['ansible_ver']}")
-            print("✅ Suggested Fix: Migrate to Ansible Core. See: https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html")
+            print(" Ansible Engine is deprecated in favor of Ansible Core.")
+            print(f" Installed version: {issue['ansible_ver']}")
+            print(" Suggested Fix: Migrate to Ansible Core. See: https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html")
 
         elif error_key == "TUNED_SERVICE_CANNOT_START_UNDER_GRAPHIC_TARGET_MODE":
-            print("⚠️ Tuned service cannot start under graphical.target.")
-            print("✅ Suggested Fix: Change the system target to multi-user.target or configure tuned to run in graphical mode if needed.")
-            print("🔧 Command: `sudo systemctl set-default multi-user.target`")
+            print(" Tuned service cannot start under graphical.target.")
+            print(" Suggested Fix: Change the system target to multi-user.target or configure tuned to run in graphical mode if needed.")
+            print(" Command: `sudo systemctl set-default multi-user.target`")
 
         elif error_key == "JDK_EOL_ERROR":
             product = issue.get("product", [])[0]
             eol_date = product.get("eol")
             days_left = product.get("days")
-            print(f"⚠️ {product['name']} version {product['version']} is nearing end-of-life.")
-            print(f"📅 EOL Date: {eol_date} ({days_left} days left)")
-            print(f"✅ Suggested Fix: Upgrade to a supported JDK version. Policy: {product['policy']}")
+            print(f" {product['name']} version {product['version']} is nearing end-of-life.")
+            print(f" EOL Date: {eol_date} ({days_left} days left)")
+            print(f" Suggested Fix: Upgrade to a supported JDK version. Policy: {product['policy']}")
 
         else:
-            print("ℹ️ No specific fix available for this issue.")
+            print("ℹ No specific fix available for this issue.")
 
 # Run the suggestions
 suggest_fixes(data["details"])

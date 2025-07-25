@@ -23,39 +23,39 @@ log() {
 }
 
 print_header() {
-    echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║           Security And Antivirus Management Suite           ║${NC}"
-    echo -e "${PURPLE}║       Comprehensive Security & Protection Toolkit           ║${NC}"
-    echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo
+    echo
+    echo
+    echo
     echo ""
 }
 
 show_main_menu() {
-    echo -e "${CYAN}Select security management option:${NC}"
+    echo
     echo ""
-    echo "🛡️  ANTIVIRUS & MALWARE:"
-    echo "1. 🦠 Install & Configure ClamAV"
-    echo "2. 🔍 Run System Virus Scan"
-    echo "3. 🔄 Update Antivirus Definitions"
-    echo "4. 📋 Quarantine Management"
+    echo "  ANTIVIRUS & MALWARE:"
+    echo "1.  Install & Configure ClamAV"
+    echo "2.  Run System Virus Scan"
+    echo "3.  Update Antivirus Definitions"
+    echo "4.  Quarantine Management"
     echo ""
-    echo "🔒 SYSTEM SECURITY:"
-    echo "5. 🔐 Firewall Configuration"
-    echo "6. 🛡️  SELinux Management"
-    echo "7. 👤 User Security Audit"
-    echo "8. 🔑 SSH Security Hardening"
+    echo " SYSTEM SECURITY:"
+    echo "5.  Firewall Configuration"
+    echo "6.   SELinux Management"
+    echo "7.  User Security Audit"
+    echo "8.  SSH Security Hardening"
     echo ""
-    echo "🔍 SECURITY SCANNING:"
-    echo "9. 🎯 Vulnerability Scanner"
-    echo "10. 🌐 Network Security Scan"
-    echo "11. 📁 File Integrity Monitoring"
-    echo "12. 🔍 Rootkit Detection"
+    echo " SECURITY SCANNING:"
+    echo "9.  Vulnerability Scanner"
+    echo "10.  Network Security Scan"
+    echo "11.  File Integrity Monitoring"
+    echo "12.  Rootkit Detection"
     echo ""
-    echo "⚙️  ADVANCED SECURITY:"
-    echo "13. 🔧 Security Configuration Audit"
-    echo "14. 📊 Security Monitoring Dashboard"
-    echo "15. 🚨 Incident Response Tools"
-    echo "16. 🚪 Exit"
+    echo "  ADVANCED SECURITY:"
+    echo "13.  Security Configuration Audit"
+    echo "14.  Security Monitoring Dashboard"
+    echo "15.  Incident Response Tools"
+    echo "16.  Exit"
     echo ""
     read -p "Enter your choice (1-16): " choice
 }
@@ -111,7 +111,7 @@ create_security_report() {
 </head>
 <body>
     <div class="header">
-        <h1>🛡️ Security Assessment Report</h1>
+        <h1> Security Assessment Report</h1>
         <p><strong>System:</strong> $(hostname)</p>
         <p><strong>Generated:</strong> $(date)</p>
         <p><strong>User:</strong> $(whoami)</p>
@@ -277,7 +277,7 @@ mv "$VIRUS_FILE" "$QUARANTINE_DIR/$(basename "$VIRUS_FILE").$(date +%Y%m%d_%H%M%
 
 # Send notification (if desktop environment is available)
 if command -v notify-send >/dev/null 2>&1; then
-    notify-send "🦠 Virus Detected" "File: $(basename "$VIRUS_FILE")\nVirus: $VIRUS_NAME\nFile quarantined." --urgency=critical 2>/dev/null || true
+    notify-send " Virus Detected" "File: $(basename "$VIRUS_FILE")\nVirus: $VIRUS_NAME\nFile quarantined." --urgency=critical 2>/dev/null || true
 fi
 
 # Send email notification (if mail is configured)
@@ -447,7 +447,7 @@ run_system_virus_scan() {
             ;;
         3)
             scan_options="$scan_options --remove"
-            echo -e "${RED}WARNING: This will permanently delete infected files!${NC}"
+            echo
             read -p "Are you sure? (y/N): " -n 1 -r
             echo
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -651,7 +651,7 @@ quarantine_management() {
                     fi
                     ;;
                 2)
-                    echo -e "${RED}WARNING: This will permanently delete all quarantined files!${NC}"
+                    echo
                     read -p "Are you sure? (y/N): " -n 1 -r
                     echo
                     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -1040,11 +1040,11 @@ main() {
             15) incident_response_tools ;;
             16) 
                 log "${GREEN}Exiting Security Management Suite${NC}"
-                echo -e "${GREEN}Log file saved to: $LOG_FILE${NC}"
+                echo
                 exit 0
                 ;;
             *)
-                echo -e "${RED}Invalid choice. Please try again.${NC}"
+                echo
                 ;;
         esac
         

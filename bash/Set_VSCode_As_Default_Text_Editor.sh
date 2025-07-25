@@ -1,4 +1,22 @@
 #!/bin/bash
+# User-configurable variables - modify as needed
+USER="${USER}"
+USER_EMAIL="${USER}@${COMPANY_DOMAIN:-example.com}"
+COMPANY_NAME="${COMPANY_NAME:-Your Company}"
+COMPANY_DOMAIN="${COMPANY_DOMAIN:-example.com}"
+
+# User-configurable variables - modify as needed
+USER="${USER}"
+USER_EMAIL="${USER}@${COMPANY_DOMAIN:-example.com}"
+COMPANY_NAME="${COMPANY_NAME:-Your Company}"
+COMPANY_DOMAIN="${COMPANY_DOMAIN:-example.com}"
+
+# User-configurable variables - modify as needed
+USER="${USER}"
+USER_EMAIL="${USER}@${COMPANY_DOMAIN:-example.com}"
+COMPANY_NAME="${COMPANY_NAME:-Your Company}"
+COMPANY_DOMAIN="${COMPANY_DOMAIN:-example.com}"
+
 
 # Ensure VSCode is installed
 if ! command -v code &> /dev/null; then

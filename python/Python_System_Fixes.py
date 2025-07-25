@@ -1,4 +1,28 @@
 #!/usr/bin/env python3
+"""
+User-configurable variables - modify as needed
+"""
+import os
+import getpass
+
+# User configuration
+USER = os.getenv('USER', getpass.getuser())
+USER_EMAIL = os.getenv('USER_EMAIL', f"{USER}@{os.getenv('COMPANY_DOMAIN', 'example.com')}")
+COMPANY_NAME = os.getenv('COMPANY_NAME', 'Your Company')
+COMPANY_DOMAIN = os.getenv('COMPANY_DOMAIN', 'example.com')
+
+"""
+User-configurable variables - modify as needed
+"""
+import os
+import getpass
+
+# User configuration
+USER = os.getenv('USER', getpass.getuser())
+USER_EMAIL = os.getenv('USER_EMAIL', f"{USER}@{os.getenv('COMPANY_DOMAIN', 'example.com')}")
+COMPANY_NAME = os.getenv('COMPANY_NAME', 'Your Company')
+COMPANY_DOMAIN = os.getenv('COMPANY_DOMAIN', 'example.com')
+
 
 """
 Script: Python_System_Fixes.py
@@ -10,6 +34,17 @@ Date: 2025-07-18
 import json
 import sys
 from datetime import datetime, timedelta
+
+# Colors for output
+RED = '\033[0;31m'
+GREEN = '\033[0;32m'
+YELLOW = '\033[1;33m'
+BLUE = '\033[0;34m'
+NC = '\033[0m' # No Color
+
+def print_url(url_text):
+    """Print URL in blue color"""
+    return f"{BLUE}{url_text}{NC}"
 
 def analyze_system_issues(data):
     """
@@ -28,7 +63,7 @@ def analyze_system_issues(data):
         "summary": {}
     }
     
-    print("🔍 Analyzing system issues from insights data...")
+    print(" Analyzing system issues from insights data...")
     
     if not isinstance(data, dict) or "details" not in data:
         results["critical_issues"].append("Invalid data format - missing 'details' key")
@@ -41,7 +76,7 @@ def analyze_system_issues(data):
         issue_type = issue_data.get("type", "unknown")
         error_key = issue_data.get("error_key", "")
         
-        print(f"📋 Processing issue: {issue_key}")
+        print(f" Processing issue: {issue_key}")
         
         # Handle specific issues
         if "ANSIBLE_ENGINE_TO_CORE_WARN" in error_key:
@@ -106,7 +141,7 @@ def generate_fix_commands(results):
     """
     commands = []
     
-    print("\n🔧 Generating fix commands...")
+    print("\n Generating fix commands...")
     
     # Generate commands for each issue
     for issue in results["critical_issues"]:
@@ -132,7 +167,7 @@ def generate_fix_commands(results):
 
 def main():
     """Main function to run the system fixes analysis"""
-    print("🚀 Python System Fixes - Red Hat Insights Analysis")
+    print(" Python System Fixes - ${COMPANY_NAME} Insights Analysis")
     print("=" * 50)
     
     # Sample input JSON data
@@ -154,15 +189,15 @@ def main():
             "openjdk_eol|JDK_EOL_ERROR": {
                 "type": "rule",
                 "brief": {
-                    "Red Hat build of OpenJDK": "https://access.redhat.com/articles/1299013"
+                    "${COMPANY_NAME} build of OpenJDK": f"{BLUE}https://access.${{COMPANY_DOMAIN}}/articles/1299013{NC}"
                 },
                 "product": [
                     {
                         "eol": "2024-10-31",
                         "days": 251,
-                        "name": "Red Hat build of OpenJDK",
+                        "name": "${COMPANY_NAME} build of OpenJDK",
                         "phase": "Full Support",
-                        "policy": "https://access.redhat.com/articles/1299013",
+                        "policy": f"{BLUE}https://access.${{COMPANY_DOMAIN}}/articles/1299013{NC}",
                         "version": "11.0.22+7"
                     }
                 ]
@@ -175,29 +210,29 @@ def main():
         results = analyze_system_issues(sample_data)
         
         # Display results
-        print("\n📊 Analysis Results:")
-        print(f"📋 Total Issues: {results['summary']['total_issues']}")
-        print(f"🔴 Critical Issues: {results['summary']['critical_count']}")
-        print(f"⚠️  Warnings: {results['summary']['warning_count']}")
+        print("\n Analysis Results:")
+        print(f" Total Issues: {results['summary']['total_issues']}")
+        print(f" Critical Issues: {results['summary']['critical_count']}")
+        print(f"  Warnings: {results['summary']['warning_count']}")
         
         # Display critical issues
         if results["critical_issues"]:
-            print("\n🔴 Critical Issues:")
+            print("\n Critical Issues:")
             for issue in results["critical_issues"]:
                 print(f"  • {issue['issue']}: {issue['description']}")
-                print(f"    💡 Recommendation: {issue['recommendation']}")
+                print(f"     Recommendation: {issue['recommendation']}")
         
         # Display warnings
         if results["warnings"]:
-            print("\n⚠️  Warnings:")
+            print("\n  Warnings:")
             for warning in results["warnings"]:
                 print(f"  • {warning['issue']}: {warning['description']}")
-                print(f"    💡 Recommendation: {warning['recommendation']}")
+                print(f"     Recommendation: {warning['recommendation']}")
         
         # Generate and display fix commands
         fix_commands = generate_fix_commands(results)
         if fix_commands:
-            print("\n🛠️  Suggested Fix Commands:")
+            print("\n  Suggested Fix Commands:")
             for cmd in fix_commands:
                 print(f"  {cmd}")
         
@@ -205,10 +240,10 @@ def main():
         output_file = f"/tmp/system_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         with open(output_file, 'w') as f:
             json.dump(results, f, indent=2)
-        print(f"\n💾 Analysis saved to: {output_file}")
+        print(f"\n Analysis saved to: {output_file}")
         
     except Exception as e:
-        print(f"❌ Error during analysis: {str(e)}")
+        print(f" Error during analysis: {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":

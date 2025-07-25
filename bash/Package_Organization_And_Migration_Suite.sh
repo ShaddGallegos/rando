@@ -23,39 +23,39 @@ log() {
 }
 
 print_header() {
-    echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║         Package Organization And Migration Suite             ║${NC}"
-    echo -e "${PURPLE}║     Comprehensive Package Management & Organization Tool     ║${NC}"
-    echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo
+    echo
+    echo
+    echo
     echo ""
 }
 
 show_main_menu() {
-    echo -e "${CYAN}Select package management option:${NC}"
+    echo
     echo ""
-    echo "📦 PACKAGE ORGANIZATION:"
-    echo "1. 🗂️  Auto-Organize RPM Packages by OS/Architecture"
-    echo "2. 📁 Batch Move Files to Organized Structure"
-    echo "3. 🔄 Migrate Packages Between Directories"
-    echo "4. 📋 Sort & Categorize Downloaded Packages"
+    echo " PACKAGE ORGANIZATION:"
+    echo "1.   Auto-Organize RPM Packages by OS/Architecture"
+    echo "2.  Batch Move Files to Organized Structure"
+    echo "3.  Migrate Packages Between Directories"
+    echo "4.  Sort & Categorize Downloaded Packages"
     echo ""
-    echo "🧹 CLEANUP & MAINTENANCE:"
-    echo "5. 🗑️  Remove Duplicate Packages"
-    echo "6. 🔍 Find & Manage Old Package Versions"
-    echo "7. 📊 Package Statistics & Analysis"
-    echo "8. 🧼 Clean Empty Directories"
+    echo " CLEANUP & MAINTENANCE:"
+    echo "5.   Remove Duplicate Packages"
+    echo "6.  Find & Manage Old Package Versions"
+    echo "7.  Package Statistics & Analysis"
+    echo "8.  Clean Empty Directories"
     echo ""
-    echo "🔧 BATCH OPERATIONS:"
-    echo "9. 📦 Bulk File Operations"
-    echo "10. 🏷️  Mass Rename Package Files"
-    echo "11. 🔗 Create Package Symlinks"
-    echo "12. 📋 Generate Package Inventory"
+    echo " BATCH OPERATIONS:"
+    echo "9.  Bulk File Operations"
+    echo "10.   Mass Rename Package Files"
+    echo "11.  Create Package Symlinks"
+    echo "12.  Generate Package Inventory"
     echo ""
-    echo "⚙️  ADVANCED:"
-    echo "13. 🎯 Custom Package Organization Rules"
-    echo "14. 📊 Package Dependency Analysis"
-    echo "15. 🚀 Automated Package Workflow"
-    echo "16. 🚪 Exit"
+    echo "  ADVANCED:"
+    echo "13.  Custom Package Organization Rules"
+    echo "14.  Package Dependency Analysis"
+    echo "15.  Automated Package Workflow"
+    echo "16.  Exit"
     echo ""
     read -p "Enter your choice (1-16): " choice
 }
@@ -1277,11 +1277,11 @@ main() {
             15) automated_package_workflow ;;
             16) 
                 log "${GREEN}Exiting Package Organization Suite${NC}"
-                echo -e "${GREEN}Log file saved to: $LOG_FILE${NC}"
+                echo
                 exit 0
                 ;;
             *)
-                echo -e "${RED}Invalid choice. Please try again.${NC}"
+                echo
                 ;;
         esac
         

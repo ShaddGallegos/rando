@@ -23,39 +23,39 @@ log() {
 }
 
 print_header() {
-    echo -e "${PURPLE}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║        System Performance And Monitoring Suite              ║${NC}"
-    echo -e "${PURPLE}║      Comprehensive Performance & Optimization Toolkit       ║${NC}"
-    echo -e "${PURPLE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo
+    echo
+    echo
+    echo
     echo ""
 }
 
 show_main_menu() {
-    echo -e "${CYAN}Select performance management option:${NC}"
+    echo
     echo ""
-    echo "📊 SYSTEM MONITORING:"
-    echo "1. 🔍 Real-time System Monitor"
-    echo "2. 📈 Performance Dashboard"
-    echo "3. 🎯 Resource Usage Analysis"
-    echo "4. 🌡️  Temperature & Hardware Monitor"
+    echo " SYSTEM MONITORING:"
+    echo "1.  Real-time System Monitor"
+    echo "2.  Performance Dashboard"
+    echo "3.  Resource Usage Analysis"
+    echo "4.   Temperature & Hardware Monitor"
     echo ""
-    echo "⚡ PERFORMANCE OPTIMIZATION:"
-    echo "5. 🚀 Quick System Optimization"
-    echo "6. 🔧 Advanced Performance Tuning"
-    echo "7. 💾 Memory Optimization"
-    echo "8. 💽 Storage Performance Tuning"
+    echo " PERFORMANCE OPTIMIZATION:"
+    echo "5.  Quick System Optimization"
+    echo "6.  Advanced Performance Tuning"
+    echo "7.  Memory Optimization"
+    echo "8.  Storage Performance Tuning"
     echo ""
-    echo "🔍 ANALYSIS & BENCHMARKING:"
-    echo "9. 🏁 System Benchmark Suite"
-    echo "10. 📋 Performance Bottleneck Analysis"
-    echo "11. 📊 Generate Performance Report"
-    echo "12. 🔬 Process Analysis & Management"
+    echo " ANALYSIS & BENCHMARKING:"
+    echo "9.  System Benchmark Suite"
+    echo "10.  Performance Bottleneck Analysis"
+    echo "11.  Generate Performance Report"
+    echo "12.  Process Analysis & Management"
     echo ""
-    echo "⚙️  SYSTEM CONFIGURATION:"
-    echo "13. 🎛️  Kernel Parameter Tuning"
-    echo "14. 🔄 Service Optimization"
-    echo "15. 🗂️  Filesystem Optimization"
-    echo "16. 🚪 Exit"
+    echo "  SYSTEM CONFIGURATION:"
+    echo "13.   Kernel Parameter Tuning"
+    echo "14.  Service Optimization"
+    echo "15.   Filesystem Optimization"
+    echo "16.  Exit"
     echo ""
     read -p "Enter your choice (1-16): " choice
 }
@@ -129,11 +129,11 @@ real_time_system_monitor() {
     install_package_if_missing "nethogs"
     
     echo "Real-time monitoring options:"
-    echo "1. 📊 CPU & Memory Monitor (htop)"
-    echo "2. 💽 Disk I/O Monitor (iotop)"
-    echo "3. 🌐 Network Monitor (nethogs)"
-    echo "4. 📈 All-in-one Dashboard"
-    echo "5. 🔄 Continuous Monitoring (5 min)"
+    echo "1.  CPU & Memory Monitor (htop)"
+    echo "2.  Disk I/O Monitor (iotop)"
+    echo "3.  Network Monitor (nethogs)"
+    echo "4.  All-in-one Dashboard"
+    echo "5.  Continuous Monitoring (5 min)"
     read -p "Choose monitoring type (1-5): " monitor_choice
     
     case $monitor_choice in
@@ -307,11 +307,11 @@ resource_usage_analysis() {
     log "${BLUE}=== Resource Usage Analysis ===${NC}"
     
     echo "Resource analysis options:"
-    echo "1. 🔍 CPU Usage Analysis"
-    echo "2. 💾 Memory Usage Analysis"
-    echo "3. 💽 Disk Usage Analysis"
-    echo "4. 🌐 Network Usage Analysis"
-    echo "5. 📊 Complete Resource Analysis"
+    echo "1.  CPU Usage Analysis"
+    echo "2.  Memory Usage Analysis"
+    echo "3.  Disk Usage Analysis"
+    echo "4.  Network Usage Analysis"
+    echo "5.  Complete Resource Analysis"
     read -p "Choose analysis type (1-5): " analysis_choice
     
     case $analysis_choice in
@@ -532,11 +532,11 @@ main() {
             15) filesystem_optimization ;;
             16) 
                 log "${GREEN}Exiting System Performance Suite${NC}"
-                echo -e "${GREEN}Log file saved to: $LOG_FILE${NC}"
+                echo
                 exit 0
                 ;;
             *)
-                echo -e "${RED}Invalid choice. Please try again.${NC}"
+                echo
                 ;;
         esac
         
