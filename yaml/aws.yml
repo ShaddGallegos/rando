@@ -1,0 +1,35 @@
+---
+# Create a workspace in vscode
+- name: Create a workspace in vscode    name: "{{ workspace_name }}"
+    path: "{{ workspace_path }}"
+    state: present
+  register: workspace_info
+
+
+
+
+
+
+create playbook playbook namew AWS_EC2.yml
+
+Provision an AWS EC2 VM with the following details
+
+group poc_hosts
+Name the ec2 instance ansible-poc-aws 
+Access key is {{ aws_access }} 
+Secret key is {{ aws_secret }} 
+ssh key is {{ ssh_key_name }} 
+Instance type should be {{ aws_instance_type }}
+Security group is {{ aws_security_group }}
+Image to use {{ aws_image_id }} 
+AWS Region is {{ aws_region }}
+VPC Subnet Id is {{ aws_vpc }}
+Enable 2 cores and 2 threads per core
+Public ip should be enabled
+state should be present
+tag the VM with the following tags: tag1 -> poc, tag2 -> ansible
+
+Take a snapshot of the VM just provisioned
+Volume Id: {{ aws_volume_id }}
+AWS Region: {{ aws_region }}
+Description: ansible-poc-snapshot

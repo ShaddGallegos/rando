@@ -1,0 +1,63 @@
+I need a menu only when my user is using ansible-core, and not when the user is running in the Ansible Automation Platform. 
+in my {{ playbook_dir }}/environments/{{ environment_dir}}
+the environment dirs are 
+rhel-8-de-minimal/ rhel-8-de-supported/ rhel-8-devtools/ rhel-8-ee-minimal/ rhel-8-ee-supported/ rhel-9-de-minimal/ rhel-9-de-supported/ rhel-9-ee-minimal/ rhel-9-ee-supported/
+Each one of those folders is its own environment.  I need a dynamic menu of these items in the environments/ folder so that when I add a new environment or remove an environment dynamic menu changes to suit. 
+
+"rhel_environments\": [\n    rhel-8-de-minimal\\nrhel-8-de-supported\\nrhel-8-devtools\\nrhel-8-ee-minimal\\nrhel-8-ee-supported\\nrhel-9-de-minimal\\nrhel-9-de-supported\\nrhel-9-ee-minimal\\nrhel-9-ee-supported\n    10.  ALL\n]\n\"This menu accepts a single selection or a ',' separated list \"\n:\n"
+}
+
+I need it to look like this in the ansible logging with the numerized environments one under the other  any ideas of how to get ansible to do this ?
+```
+rhel_environments:
+    1. rhel-8-de-minimal
+    2. rhel-8-de-supported
+    3. rhel-8-devtools
+    4. rhel-8-ee-minimal
+    5. rhel-8-ee-supported
+    6. rhel-9-de-minimal
+    7. rhel-9-de-supported
+    8. rhel-9-ee-minimal
+    9. rhel-9-ee-supported 
+    10.  ALL
+"This menu accepts a single selection or a ',' separated list \"
+:
+```
+
+---
+- name: Dynamically list RHEL environments when running under ansible-core
+  hosts: localhost
+  gather_facts: true
+  vars:
+    environment_dir: environments
+
+  tasks:
+
+    - name: Detect if running in AAP
+      set_fact:
+        show_menu: "{{ ansible_execution_environment is not defined }}"
+
+    - name: Read environment directories under {{ environment_dir }}
+      set_fact:
+        rhel_env_dirs: >-
+          {{ lookup('fileglob', playbook_dir ~ '/' ~ environment_dir ~ '/*', wantlist=True)
+             | map('basename') | sort }}
+
+    - name: Build dynamic menu as newline-separated string
+      set_fact:
+        rhel_env_menu: >-
+          rhel_environments:\n
+          {% for env in rhel_env_dirs %}
+            {{ loop.index }}. {{ env }}\n
+          {% endfor %}
+          {{ rhel_env_dirs | length + 1 }}. ALL\n
+          "This menu accepts a single selection or a ',' separated list."\n
+          :
+
+    - name: Show the menu only if using ansible-core
+      debug:
+        msg: "{{ rhel_env_menu }}"
+      when: show_menu
+      
+
+
