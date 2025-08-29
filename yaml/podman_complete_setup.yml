@@ -1,155 +1,155 @@
 ---
 - name: Complete Podman Setup
-  hosts: localhost
+- hosts: localhost
   become: true
   gather_facts: true
-  
+
   vars:
-    podman_packages:
-      - podman
-      - podman-compose
-      - buildah
-      - skopeo
-      - crun
-      - fuse-overlayfs
-    
-    podman_user: "{{ ansible_user_id }}"
-    
+  podman_packages:
+  - podman
+- podman-compose
+- buildah
+- skopeo
+- crun
+- fuse-overlayfs
+
+  podman_user: "{{ ansible_user_id }}"
+
   tasks:
-    - name: Update system packages
-      ansible.builtin.dnf:
-        name: "*"
-        state: latest
-      when: ansible_os_family == 'RedHat'
-    
-    - name: Install Podman and related packages
-      ansible.builtin.dnf:
-        name: "{{ podman_packages }}"
-        state: present
-      when: ansible_os_family == 'RedHat'
-    
-    - name: Enable and start Podman socket service
-      ansible.builtin.systemd:
-        name: podman.socket
-        enabled: true
-        state: started
-        scope: system
-    
-    - name: Configure subuid and subgid for rootless containers
-      block:
-        - name: Set subuid for user
-          ansible.builtin.lineinfile:
-            path: /etc/subuid
-            line: "{{ podman_user }}:100000:65536"
-            create: true
-            
-        - name: Set subgid for user
-          ansible.builtin.lineinfile:
-            path: /etc/subgid
-            line: "{{ podman_user }}:100000:65536"
-            create: true
-    
-    - name: Create Podman configuration directories
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: directory
-        mode: '0755'
-        owner: "{{ podman_user }}"
-        group: "{{ podman_user }}"
-      loop:
-        - "/home/{{ podman_user }}/.config/containers"
-        - "/home/{{ podman_user }}/.local/share/containers"
-      become_user: "{{ podman_user }}"
-      become: false
-    
-    - name: Configure containers.conf for rootless
-      ansible.builtin.copy:
-        content: |
-          [containers]
-          log_driver = "journald"
-          
-          [engine]
-          cgroup_manager = "systemd"
-          events_logger = "journald"
-          runtime = "crun"
-          
-          [network]
-          network_backend = "netavark"
-          
-          [secrets]
-          driver = "file"
-        dest: "/home/{{ podman_user }}/.config/containers/containers.conf"
-        mode: '0644'
-        owner: "{{ podman_user }}"
-        group: "{{ podman_user }}"
-      become_user: "{{ podman_user }}"
-      become: false
-    
-    - name: Enable and start user Podman socket
-      ansible.builtin.systemd:
-        name: podman.socket
-        enabled: true
-        state: started
-        scope: user
-      become_user: "{{ podman_user }}"
-      become: false
-    
-    - name: Install Ansible Core for container management
-      ansible.builtin.dnf:
-        name: ansible-core
-        state: present
-      when: ansible_os_family == 'RedHat'
-    
-    - name: Install Podman collection for Ansible
-      ansible.builtin.command: ansible-galaxy collection install containers.podman
-      become_user: "{{ podman_user }}"
-      become: false
-      ignore_errors: true
-    
-    - name: Test Podman installation
-      block:
-        - name: Run hello-world container
-          containers.podman.podman_container:
-            name: test-hello
-            image: hello-world
-            state: started
-            detach: false
-          register: hello_world_result
-          become_user: "{{ podman_user }}"
-          become: false
-          
-        - name: Clean up test container
-          containers.podman.podman_container:
-            name: test-hello
-            state: absent
-          become_user: "{{ podman_user }}"
-          become: false
-          
-        - name: Display test results
-          ansible.builtin.debug:
-            msg: "Podman test successful: {{ hello_world_result.container.State.ExitCode == 0 }}"
-      rescue:
-        - name: Display test failure
-          ansible.builtin.debug:
-            msg: "Podman test failed - manual verification required"
-    
-    - name: Verify Podman setup
-      block:
-        - name: Check Podman version
-          ansible.builtin.command: podman --version
-          register: podman_version
-          become_user: "{{ podman_user }}"
-          become: false
-          
-        - name: Check Podman info
-          ansible.builtin.command: podman info --format json
-          register: podman_info
-          become_user: "{{ podman_user }}"
-          become: false
-          
-        - name: Display setup status
-          ansible.builtin.debug:
-            msg: |
-              Podman version: {{ podman_version.stdout }}
-              Rootless setup: {{ (podman_info.stdout | from_json).host.security.rootless }}
-              Runtime: {{ (podman_info.stdout | from_json).host.ociRuntime.name }}
+  - name: Update system packages
+  ansible.builtin.dnf:
+  - name: "*"
+  state: latest
+  when: ansible_os_family == 'RedHat'
+
+- name: Install Podman and related packages
+  ansible.builtin.dnf:
+  - name: "{{ podman_packages }}"
+  state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: Enable and start Podman socket service
+  ansible.builtin.systemd:
+  - name: podman.socket
+  enabled: true
+  state: started
+  scope: system
+
+- name: Configure subuid and subgid for rootless containers
+  block:
+  - name: Set subuid for user
+  ansible.builtin.lineinfile:
+  path: /etc/subuid
+  line: "{{ podman_user }}:100000:65536"
+  create: true
+
+- name: Set subgid for user
+  ansible.builtin.lineinfile:
+  path: /etc/subgid
+  line: "{{ podman_user }}:100000:65536"
+  create: true
+
+- name: Create Podman configuration directories
+  ansible.builtin.file:
+  path: "{{ item }}"
+  state: directory
+  mode: '0755'
+  owner: "{{ podman_user }}"
+  group: "{{ podman_user }}"
+  loop:
+  - "/home/{{ podman_user }}/.config/containers"
+- "/home/{{ podman_user }}/.local/share/containers"
+  become_user: "{{ podman_user }}"
+  become: false
+
+- name: Configure containers.conf for rootless
+  ansible.builtin.copy:
+  content: |
+    [containers]
+    log_driver = "journald"
+
+    [engine]
+    cgroup_manager = "systemd"
+    events_logger = "journald"
+    runtime = "crun"
+
+    [network]
+    network_backend = "netavark"
+
+    [secrets]
+    driver = "file"
+  dest: "/home/{{ podman_user }}/.config/containers/containers.conf"
+  mode: '0644'
+  owner: "{{ podman_user }}"
+  group: "{{ podman_user }}"
+  become_user: "{{ podman_user }}"
+  become: false
+
+- name: Enable and start user Podman socket
+  ansible.builtin.systemd:
+  - name: podman.socket
+  enabled: true
+  state: started
+  scope: user
+  become_user: "{{ podman_user }}"
+  become: false
+
+- name: Install Ansible Core for container management
+  ansible.builtin.dnf:
+  - name: ansible-core
+  state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: Install Podman collection for Ansible
+  ansible.builtin.command: ansible-galaxy collection install containers.podman
+  become_user: "{{ podman_user }}"
+  become: false
+  ignore_errors: true
+
+- name: Test Podman installation
+  block:
+  - name: Run hello-world container
+  containers.podman.podman_container:
+  - name: test-hello
+  image: hello-world
+  state: started
+  detach: false
+  register: hello_world_result
+  become_user: "{{ podman_user }}"
+  become: false
+
+- name: Clean up test container
+  containers.podman.podman_container:
+  - name: test-hello
+  state: absent
+  become_user: "{{ podman_user }}"
+  become: false
+
+- name: Display test results
+  ansible.builtin.debug:
+  msg: "Podman test successful: {{ hello_world_result.container.State.ExitCode == 0 }}"
+  rescue:
+  - name: Display test failure
+  ansible.builtin.debug:
+  msg: "Podman test failed - manual verification required"
+
+- name: Verify Podman setup
+  block:
+  - name: Check Podman version
+  ansible.builtin.command: podman --version
+  register: podman_version
+  become_user: "{{ podman_user }}"
+  become: false
+
+- name: Check Podman info
+  ansible.builtin.command: podman info --format json
+  register: podman_info
+  become_user: "{{ podman_user }}"
+  become: false
+
+- name: Display setup status
+  ansible.builtin.debug:
+  msg: |
+  Podman version: {{ podman_version.stdout }}
+  Rootless setup: {{ (podman_info.stdout | from_json).host.security.rootless }}
+  Runtime: {{ (podman_info.stdout | from_json).host.ociRuntime.name }}

@@ -1,231 +1,231 @@
 ---
 - name: EE/DE Builder for Ansible Automation Platform 2.5
-  hosts: localhost
+- hosts: localhost
   become: true
   environment:
-    ANSIBLE_LOCALHOST_WARNING: "False"
+  ANSIBLE_LOCALHOST_WARNING: "False"
 
   pre_tasks:
-    - name: Verify internet connection
-      ansible.builtin.uri:
-        url: http://www.google.com
-        return_content: false
-      register: ping_result
-      ignore_errors: true
+  - name: Verify internet connection
+  ansible.builtin.uri:
+  url: http://www.google.com
+  return_content: false
+  register: ping_result
+  ignore_errors: true
 
-    - name: Fail if no internet connection
-      ansible.builtin.fail:
-        msg: "No internet connection detected."
-      when: ping_result.status != 200
+- name: Fail if no internet connection
+  ansible.builtin.fail:
+  msg: "No internet connection detected."
+  when: ping_result.status != 200
 
-    - name: Create admin user
-      ansible.builtin.user:
-        name: admin
-        password: "{{ 'redhat' | password_hash('sha512') }}"
-        state: present
-        groups: wheel
-        append: true
+- name: Create admin user
+  ansible.builtin.user:
+  - name: admin
+  password: "{{ 'redhat' | password_hash('sha512') }}"
+  state: present
+  groups: wheel
+  append: true
 
-    - name: Add admin user to sudoers
-      ansible.builtin.lineinfile:
-        path: /etc/sudoers
-        state: present
-        regexp: "^admin"
-        line: "admin  ALL=(ALL)       NOPASSWD: ALL"
-        validate: "visudo -cf %s"
+- name: Add admin user to sudoers
+  ansible.builtin.lineinfile:
+  path: /etc/sudoers
+  state: present
+  regexp: "^admin"
+  line: "admin ALL=(ALL) NOPASSWD: ALL"
+  validate: "visudo -cf %s"
 
-    - name: Ensure requirements are installed via dnf
-      ansible.builtin.dnf:
-        name:
-          - python
-          - python3
-          - python3-pip
-          - python3.11
-          - ansible-core
-          - container-tools
-          - podman
-          - podman-docker
-        state: present
-      become: true
-      when: ansible_distribution == "RedHat"
+- name: Ensure requirements are installed via dnf
+  ansible.builtin.dnf:
+  - name:
+- python
+- python3
+- python3-pip
+- python3.11
+- ansible-core
+- container-tools
+- podman
+- podman-docker
+  state: present
+  become: true
+  when: ansible_distribution == "RedHat"
 
-    - name: Verify python3.11 installation
-      ansible.builtin.command:
-        cmd: python3.11 --version
-      register: python_version
-      ignore_errors: true
-      changed_when: false
+- name: Verify python3.11 installation
+  ansible.builtin.command:
+  cmd: python3.11 --version
+  register: python_version
+  ignore_errors: true
+  changed_when: false
 
-    - name: Fail if python3.11 is not installed
-      ansible.builtin.fail:
-        msg: "python3.11 is not installed correctly."
-      when: python_version.rc != 0
+- name: Fail if python3.11 is not installed
+  ansible.builtin.fail:
+  msg: "python3.11 is not installed correctly."
+  when: python_version.rc != 0
 
-    - name: Find requirements.txt file
-      ansible.builtin.find:
-        paths: files/
-        patterns: requirements.txt
-        recurse: true
-      register: requirements_txt_file
+- name: Find requirements.txt file
+  ansible.builtin.find:
+  paths: files/
+  patterns: requirements.txt
+  recurse: true
+  register: requirements_txt_file
 
-    - name: Check if requirements.txt has changed
-      ansible.builtin.stat:
-        path: "{{ requirements_txt_file.files[0].path }}"
-      register: requirements_txt_stat
+- name: Check if requirements.txt has changed
+  ansible.builtin.stat:
+  path: "{{ requirements_txt_file.files[0].path }}"
+  register: requirements_txt_stat
 
-    - name: Upgrade/Install ansible components using pip if requirements.txt is found and has changed
-      ansible.builtin.command:
-        cmd: /usr/bin/python3 -m pip install --upgrade --ignore-installed -r "{{ requirements_txt_file.files[0].path }}"
-        creates: /usr/local/lib/python3.11/site-packages/ansible
-      become: true
-      become_user: admin
-      when: ansible_distribution == "RedHat" and requirements_txt_file.matched > 0 and requirements_txt_stat.stat.mtime > (ansible_date_time.epoch | int - 86400)
+- name: Upgrade/Install ansible components using pip if requirements.txt is found and has changed
+  ansible.builtin.command:
+  cmd: /usr/bin/python3 -m pip install --upgrade --ignore-installed -r "{{ requirements_txt_file.files[0].path }}"
+  creates: /usr/local/lib/python3.11/site-packages/ansible
+  become: true
+  become_user: admin
+  when: ansible_distribution == "RedHat" and requirements_txt_file.matched > 0 and requirements_txt_stat.stat.mtime > (ansible_date_time.epoch | int - 86400)
 
-    - name: Build a numeric menu for the user to select environment
-      block:
-        - name: Find environment directories
-          ansible.builtin.find:
-            paths: "environments/"
-            patterns: "ee-*"
-            recurse: false
-            file_type: directory
-          register: found_ee_dirs
+- name: Build a numeric menu for the user to select environment
+  block:
+  - name: Find environment directories
+  ansible.builtin.find:
+  paths: "environments/"
+  patterns: "ee-*"
+  recurse: false
+  file_type: directory
+  register: found_ee_dirs
 
-        - name: Find additional environment directories
-          ansible.builtin.find:
-            paths: "environments/"
-            patterns: "de-*"
-            recurse: false
-            file_type: directory
-          register: found_de_dirs
+- name: Find additional environment directories
+  ansible.builtin.find:
+  paths: "environments/"
+  patterns: "de-*"
+  recurse: false
+  file_type: directory
+  register: found_de_dirs
 
-        - name: Combine and sort environment directories
-          ansible.builtin.set_fact:
-            all_dirs: "{{ (found_ee_dirs.files + found_de_dirs.files) | sort(attribute='path') }}"
+- name: Combine and sort environment directories
+  ansible.builtin.set_fact:
+  all_dirs: "{{ (found_ee_dirs.files + found_de_dirs.files) | sort(attribute='path') }}"
 
-        - name: Build menu options string
-          ansible.builtin.set_fact:
-            menu_options: |
-              {% for item in all_dirs %}
-              {{ loop.index }}: {{ item.path | basename }}
-              {% endfor %}
+- name: Build menu options string
+  ansible.builtin.set_fact:
+  menu_options: |
+    {% for item in all_dirs %}
+  {{ loop.index }}: {{ item.path | basename }}
+    {% endfor %}
 
-        - name: Display menu options
-          ansible.builtin.debug:
-            msg: "{{ menu_options }}"
+- name: Display menu options
+  ansible.builtin.debug:
+  msg: "{{ menu_options }}"
 
-        - name: Prompt user for environment selection
-          ansible.builtin.pause:
-            prompt: |
-              Select an environment:
-              {{ menu_options }}
-          register: user_selection
+- name: Prompt user for environment selection
+  ansible.builtin.pause:
+  prompt: |
+  Select an environment:
+    {{ menu_options }}
+  register: user_selection
 
-        - name: Set selected environment
-          ansible.builtin.set_fact:
-            selected_env: "{{ all_dirs[user_selection.user_input | int - 1].path }}"
+- name: Set selected environment
+  ansible.builtin.set_fact:
+  selected_env: "{{ all_dirs[user_selection.user_input | int - 1].path }}"
 
-        - name: Debug selected environment
-          ansible.builtin.debug:
-            var: selected_env
+- name: Debug selected environment
+  ansible.builtin.debug:
+  var: selected_env
 
   vars_prompt:
-    - name: rh_username
-      prompt: "Enter your Red Hat CDN username"
-      private: false
-    - name: rh_password
-      prompt: "Enter your Red Hat CDN password"
-      private: true
-    - name: AH_TOKEN
-      prompt: "Enter your Automation Hub token from https://cloud.redhat.com/ansible/automation-hub/token"
-      private: false
+  - name: rh_username
+  prompt: "Enter your Red Hat CDN username"
+  private: false
+- name: rh_password
+  prompt: "Enter your Red Hat CDN password"
+  private: true
+- name: AH_TOKEN
+  prompt: "Enter your Automation Hub token from https://cloud.redhat.com/ansible/automation-hub/token"
+  private: false
 
   tasks:
-    - name: Login to registry.redhat.io
-      ansible.builtin.command:
-        cmd: "podman login -u {{ rh_username }} -p {{ rh_password }} registry.redhat.io"
-      changed_when: false
+  - name: Login to registry.redhat.io
+  ansible.builtin.command:
+  cmd: "podman login -u {{ rh_username }} -p {{ rh_password }} registry.redhat.io"
+  changed_when: false
 
-    - name: Create ansible.cfg file with provided credentials
-      ansible.builtin.template:
-        src: templates/ansible.cfg.j2
-        dest: /tmp/ee-containers/ansible.cfg
-        mode: "0644"
+- name: Create ansible.cfg file with provided credentials
+  ansible.builtin.template:
+  src: templates/ansible.cfg.j2
+  dest: /tmp/ee-containers/ansible.cfg
+  mode: "0644"
 
-    - name: Check if requirements.yml exists
-      ansible.builtin.stat:
-        path: /tmp/ee-containers/requirements.yml
-      register: requirements_yml
+- name: Check if requirements.yml exists
+  ansible.builtin.stat:
+  path: /tmp/ee-containers/requirements.yml
+  register: requirements_yml
 
-    - name: Check if ansible-galaxy collections are already installed
-      ansible.builtin.command:
-        cmd: "ansible-galaxy collection list -r /tmp/ee-containers/requirements.yml"
-      register: collections_installed
-      changed_when: false
-      when: requirements_yml.stat.exists
+- name: Check if ansible-galaxy collections are already installed
+  ansible.builtin.command:
+  cmd: "ansible-galaxy collection list -r /tmp/ee-containers/requirements.yml"
+  register: collections_installed
+  changed_when: false
+  when: requirements_yml.stat.exists
 
-    - name: Ensure ansible-galaxy collections in requirements.yml are installed
-      ansible.builtin.command:
-        cmd: "ansible-galaxy collection install -r /tmp/ee-containers/requirements.yml"
-      when: requirements_yml.stat.exists and collections_installed.stdout.find("All collections are up to date.") == -1
-      changed_when: collections_installed.stdout.find("All collections are up to date.") == -1
+- name: Ensure ansible-galaxy collections in requirements.yml are installed
+  ansible.builtin.command:
+  cmd: "ansible-galaxy collection install -r /tmp/ee-containers/requirements.yml"
+  when: requirements_yml.stat.exists and collections_installed.stdout.find("All collections are up to date.") == -1
+  changed_when: collections_installed.stdout.find("All collections are up to date.") == -1
 
-    - name: Check if image already exists
-      ansible.builtin.command:
-        cmd: "podman images -q {{ selected_env | basename }}"
-      check_mode: true
-      register: image_exists
-      changed_when: false
+- name: Check if image already exists
+  ansible.builtin.command:
+  cmd: "podman images -q {{ selected_env | basename }}"
+  check_mode: true
+  register: image_exists
+  changed_when: false
 
-    - name: Change ownership of build directory to admin
-      ansible.builtin.file:
-        path: /tmp/ee-containers/_build
-        state: directory
-        owner: admin
-        group: admin
-        recurse: true
-      become: true
+- name: Change ownership of build directory to admin
+  ansible.builtin.file:
+  path: /tmp/ee-containers/_build
+  state: directory
+  owner: admin
+  group: admin
+  recurse: true
+  become: true
 
-    - name: Start image build process in the background if image does not exist
-      ansible.builtin.shell: |
-        nohup /usr/local/bin/ansible-builder build --prune-images --no-cache -v3 \
-        -f {{ selected_env }}/execution-environment.yml --context /tmp/ee-containers \
-        --tag {{ selected_env | basename }} > /tmp/build.log 2>&1 & echo $!
-      when: image_exists.stdout == ""
-      register: build_pid
-      changed_when: false
-      become: true
-      become_user: root
+- name: Start image build process in the background if image does not exist
+  ansible.builtin.shell: |
+    nohup /usr/local/bin/ansible-builder build --prune-images --no-cache -v3 \
+    -f {{ selected_env }}/execution-environment.yml --context /tmp/ee-containers \
+    --tag {{ selected_env | basename }} > /tmp/build.log 2>&1 & echo $!
+  when: image_exists.stdout == ""
+  register: build_pid
+  changed_when: false
+  become: true
+  become_user: root
 
-    - name: Monitor build process and tee log to console
-      ansible.builtin.shell: |
-        while ps -p {{ build_pid.stdout }} > /dev/null 2>&1; do
-          tail -n +1 /tmp/build.log
-          sleep 10
-        done
-      async: 600
-      poll: 10
-      changed_when: false
+- name: Monitor build process and tee log to console
+  ansible.builtin.shell: |
+    while ps -p {{ build_pid.stdout }} > /dev/null 2>&1; do
+    tail -n +1 /tmp/build.log
+    sleep 10
+    done
+  async: 600
+  poll: 10
+  changed_when: false
 
-    - name: Display build log
-      ansible.builtin.command:
-        cmd: cat /tmp/build.log
-      changed_when: false
-      register: build_log
+- name: Display build log
+  ansible.builtin.command:
+  cmd: cat /tmp/build.log
+  changed_when: false
+  register: build_log
 
-    - name: Display build log output
-      ansible.builtin.debug:
-        var: build_log.stdout
+- name: Display build log output
+  ansible.builtin.debug:
+  var: build_log.stdout
 
-    - name: Clean up build log
-      ansible.builtin.file:
-        path: /tmp/build.log
-        state: absent
-      changed_when: false
+- name: Clean up build log
+  ansible.builtin.file:
+  path: /tmp/build.log
+  state: absent
+  changed_when: false
 
-    - name: Switch to admin user and run podman images
-      ansible.builtin.command:
-        cmd: podman images
-      changed_when: false
-      become: true
-      become_user: admin
+- name: Switch to admin user and run podman images
+  ansible.builtin.command:
+  cmd: podman images
+  changed_when: false
+  become: true
+  become_user: admin

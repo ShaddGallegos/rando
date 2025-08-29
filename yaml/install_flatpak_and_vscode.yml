@@ -1,87 +1,87 @@
 ---
 - name: Install Flatpak and Visual Studio Code
-  hosts: localhost
+- hosts: localhost
   become: true
   gather_facts: true
-  
+
   vars:
-    flatpak_repo: "https://dl.flathub.org/repo/flathub.flatpakrepo"
-    vscode_flatpak_id: "com.visualstudio.code"
-    
+  flatpak_repo: "https://dl.flathub.org/repo/flathub.flatpakrepo"
+  vscode_flatpak_id: "com.visualstudio.code"
+
   tasks:
-    - name: Check if system is RHEL-based
-      ansible.builtin.set_fact:
-        is_rhel_family: "{{ ansible_os_family == 'RedHat' }}"
-    
-    - name: Update system packages
-      ansible.builtin.dnf:
-        name: "*"
-        state: latest
-      when: is_rhel_family
-    
-    - name: Install Flatpak package
-      ansible.builtin.dnf:
-        name: flatpak
-        state: present
-      when: is_rhel_family
-    
-    - name: Add Flathub repository
-      community.general.flatpak_remote:
-        name: flathub
-        state: present
-        flatpakrepo_url: "{{ flatpak_repo }}"
-        method: system
-    
-    - name: Install Visual Studio Code via Flatpak
-      community.general.flatpak:
-        name: "{{ vscode_flatpak_id }}"
-        state: present
-        method: system
-    
-    - name: Create desktop entry for VS Code
-      ansible.builtin.copy:
-        content: |
-          [Desktop Entry]
-          Version=1.0
-          Type=Application
-          Name=Visual Studio Code
-          Comment=Code Editing. Redefined.
-          Exec=/usr/bin/flatpak run com.visualstudio.code
-          Icon=com.visualstudio.code
-          Terminal=false
-          Categories=Development;IDE;
-          MimeType=text/plain;
-        dest: /usr/share/applications/vscode-flatpak.desktop
-        mode: '0644'
-        
-    - name: Check RHEL8 CSB connectivity
-      ansible.builtin.uri:
-        url: "https://access.redhat.com/products/red-hat-enterprise-linux/"
-        method: GET
-        timeout: 10
-      register: rhel_connectivity
-      ignore_errors: true
-      
-    - name: Display connectivity results
-      ansible.builtin.debug:
-        msg: |
-          RHEL connectivity status: {{ 'SUCCESS' if rhel_connectivity.status == 200 else 'FAILED' }}
-          {% if rhel_connectivity.status != 200 %}
-          Error: {{ rhel_connectivity.msg | default('Connection failed') }}
-          {% endif %}
-    
-    - name: Verify installations
-      block:
-        - name: Check Flatpak installation
-          ansible.builtin.command: flatpak --version
-          register: flatpak_version
-          
-        - name: Check VS Code installation
-          ansible.builtin.command: flatpak list --app | grep -i code
-          register: vscode_check
-          
-        - name: Display installation status
-          ansible.builtin.debug:
-            msg: |
-              Flatpak version: {{ flatpak_version.stdout }}
-              VS Code installed: {{ 'YES' if vscode_check.rc == 0 else 'NO' }}
+  - name: Check if system is RHEL-based
+  ansible.builtin.set_fact:
+  is_rhel_family: "{{ ansible_os_family == 'RedHat' }}"
+
+- name: Update system packages
+  ansible.builtin.dnf:
+  - name: "*"
+  state: latest
+  when: is_rhel_family
+
+- name: Install Flatpak package
+  ansible.builtin.dnf:
+  - name: flatpak
+  state: present
+  when: is_rhel_family
+
+- name: Add Flathub repository
+  community.general.flatpak_remote:
+  - name: flathub
+  state: present
+  flatpakrepo_url: "{{ flatpak_repo }}"
+  method: system
+
+- name: Install Visual Studio Code via Flatpak
+  community.general.flatpak:
+  - name: "{{ vscode_flatpak_id }}"
+  state: present
+  method: system
+
+- name: Create desktop entry for VS Code
+  ansible.builtin.copy:
+  content: |
+    [Desktop Entry]
+    Version=1.0
+    Type=Application
+    Name=Visual Studio Code
+    Comment=Code Editing. Redefined.
+    Exec=/usr/bin/flatpak run com.visualstudio.code
+    Icon=com.visualstudio.code
+    Terminal=false
+    Categories=Development;IDE;
+    MimeType=text/plain;
+  dest: /usr/share/applications/vscode-flatpak.desktop
+  mode: '0644'
+
+- name: Check RHEL8 CSB connectivity
+  ansible.builtin.uri:
+  url: "https://access.redhat.com/products/red-hat-enterprise-linux/"
+  method: GET
+  timeout: 10
+  register: rhel_connectivity
+  ignore_errors: true
+
+- name: Display connectivity results
+  ansible.builtin.debug:
+  msg: |
+  RHEL connectivity status: {{ 'SUCCESS' if rhel_connectivity.status == 200 else 'FAILED' }}
+    {% if rhel_connectivity.status != 200 %}
+  Error: {{ rhel_connectivity.msg | default('Connection failed') }}
+    {% endif %}
+
+- name: Verify installations
+  block:
+  - name: Check Flatpak installation
+  ansible.builtin.command: flatpak --version
+  register: flatpak_version
+
+- name: Check VS Code installation
+  ansible.builtin.command: flatpak list --app | grep -i code
+  register: vscode_check
+
+- name: Display installation status
+  ansible.builtin.debug:
+  msg: |
+  Flatpak version: {{ flatpak_version.stdout }}
+  VS Code installed: {{ 'YES' if vscode_check.rc == 0 else 'NO' }}

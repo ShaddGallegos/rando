@@ -6,8 +6,8 @@ set -e
 echo "=== Enabling EPEL and RPM Fusion repositories ==="
 sudo dnf install -y epel-release
 sudo dnf install -y \
-  https://download1.rpmfusion.org/free/el/rpmfusion-free-release-9.noarch.rpm \
-  https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-9.noarch.rpm
+https://download1.rpmfusion.org/free/el/rpmfusion-free-release-9.noarch.rpm \
+https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-9.noarch.rpm
 
 echo "=== Enabling required RHEL 9 repositories ==="
 sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms || true
@@ -48,8 +48,8 @@ echo "Forcing akmods to rebuild NVIDIA kernel modules..."
 sudo akmods --force
 
 echo "Regenerating initramfs again for NVIDIA modules..."
-sudo dracut --force
+  sudo dracut --force
 
-echo "=== All steps complete ==="
-echo "Please reboot your system to apply changes:"
-echo "  sudo reboot"
+  echo "=== All steps complete ==="
+  echo "Please reboot your system to apply changes:"
+  echo " sudo reboot"

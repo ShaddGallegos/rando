@@ -1,401 +1,401 @@
 ---
 - name: Python System Analysis and Fixes
-  hosts: localhost
+- hosts: localhost
   become: true
   gather_facts: true
-  
+
   vars:
-    python_packages:
-      - python3
-      - python3-pip
-      - python3-devel
-      - python3-setuptools
-      - python3-wheel
-    
-    analysis_modules:
-      - psutil
-      - requests
-      - pyyaml
-      - colorama
-      - tabulate
-    
+  python_packages:
+  - python3
+- python3-pip
+- python3-devel
+- python3-setuptools
+- python3-wheel
+
+  analysis_modules:
+  - psutil
+- requests
+- pyyaml
+- colorama
+- tabulate
+
   tasks:
-    - name: Install Python and required packages
-      ansible.builtin.dnf:
-        name: "{{ python_packages }}"
-        state: present
-      when: ansible_os_family == 'RedHat'
-    
-    - name: Install Python analysis modules
-      ansible.builtin.pip:
-        name: "{{ analysis_modules }}"
-        state: present
-        executable: pip3
-      ignore_errors: true
-    
-    - name: Create Python system analysis script
-      ansible.builtin.copy:
-        content: |
-          #!/usr/bin/env python3
-          """
-          Python System Analysis and Fixes
-          Comprehensive system health check and automated fixes
-          """
-          
-          import os
-          import sys
-          import subprocess
-          import json
-          import time
-          import shutil
-          from datetime import datetime
-          
-          try:
-              import psutil
-              import requests
-              from tabulate import tabulate
-              import yaml
-          except ImportError as e:
-              print(f"Required module missing: {e}")
-              print("Installing required modules...")
-              subprocess.run([sys.executable, "-m", "pip", "install", "psutil", "requests", "tabulate", "pyyaml"], check=False)
-              import psutil
-              import requests
-              from tabulate import tabulate
-              import yaml
-          
-          class SystemAnalyzer:
-              def __init__(self):
-                  self.report = {
-                      'timestamp': datetime.now().isoformat(),
-                      'hostname': os.uname().nodename,
-                      'issues_found': [],
-                      'fixes_applied': [],
-                      'system_stats': {}
-                  }
-              
-              def check_disk_usage(self):
-                  """Check disk usage and clean if needed"""
-                  disk_usage = []
-                  critical_partitions = []
-                  
-                  for partition in psutil.disk_partitions():
-                      try:
-                          usage = psutil.disk_usage(partition.mountpoint)
-                          percent_used = (usage.used / usage.total) * 100
-                          
-                          disk_info = {
-                              'device': partition.device,
-                              'mountpoint': partition.mountpoint,
-                              'total_gb': round(usage.total / (1024**3), 2),
-                              'used_gb': round(usage.used / (1024**3), 2),
-                              'free_gb': round(usage.free / (1024**3), 2),
-                              'percent_used': round(percent_used, 2)
-                          }
-                          disk_usage.append(disk_info)
-                          
-                          if percent_used > 90:
-                              critical_partitions.append(disk_info)
-                              self.report['issues_found'].append(f"Critical disk usage on {partition.mountpoint}: {percent_used:.1f}%")
-                      
-                      except (PermissionError, OSError):
-                          continue
-                  
-                  self.report['system_stats']['disk_usage'] = disk_usage
-                  
-                  # Auto-cleanup for critical partitions
-                  if critical_partitions:
-                      self.cleanup_disk_space()
-                  
-                  return disk_usage
-              
-              def cleanup_disk_space(self):
-                  """Automated disk cleanup"""
-                  cleanup_paths = [
-                      '/tmp/*',
-                      '/var/tmp/*',
-                      '/var/log/*.log.*',
-                      '/var/cache/dnf/*'
-                  ]
-                  
-                  for path_pattern in cleanup_paths:
-                      try:
-                          result = subprocess.run(['find', path_pattern.split('*')[0], '-name', path_pattern.split('/')[-1], '-type', 'f', '-atime', '+7', '-delete'], 
-                                                capture_output=True, text=True)
-                          if result.returncode == 0:
-                              self.report['fixes_applied'].append(f"Cleaned old files matching {path_pattern}")
-                      except Exception as e:
-                          continue
-                  
-                  # Clean package cache
-                  try:
-                      subprocess.run(['dnf', 'clean', 'all'], check=False, capture_output=True)
-                      self.report['fixes_applied'].append("Cleaned DNF package cache")
-                  except Exception:
-                      pass
-              
-              def check_memory_usage(self):
-                  """Check memory usage and swap"""
-                  memory = psutil.virtual_memory()
-                  swap = psutil.swap_memory()
-                  
-                  memory_info = {
-                      'total_gb': round(memory.total / (1024**3), 2),
-                      'used_gb': round(memory.used / (1024**3), 2),
-                      'available_gb': round(memory.available / (1024**3), 2),
-                      'percent_used': memory.percent,
-                      'swap_total_gb': round(swap.total / (1024**3), 2) if swap.total > 0 else 0,
-                      'swap_used_gb': round(swap.used / (1024**3), 2) if swap.total > 0 else 0,
-                      'swap_percent': swap.percent if swap.total > 0 else 0
-                  }
-                  
-                  self.report['system_stats']['memory'] = memory_info
-                  
-                  if memory.percent > 90:
-                      self.report['issues_found'].append(f"Critical memory usage: {memory.percent:.1f}%")
-                      self.optimize_memory()
-                  
-                  return memory_info
-              
-              def optimize_memory(self):
-                  """Optimize memory usage"""
-                  try:
-                      # Drop caches
-                      subprocess.run(['sync'], check=False)
-                      with open('/proc/sys/vm/drop_caches', 'w') as f:
-                          f.write('3')
-                      self.report['fixes_applied'].append("Dropped system caches to free memory")
-                  except Exception:
-                      pass
-              
-              def check_system_load(self):
-                  """Check system load and CPU usage"""
-                  load_avg = os.getloadavg()
-                  cpu_percent = psutil.cpu_percent(interval=1)
-                  cpu_count = psutil.cpu_count()
-                  
-                  load_info = {
-                      'load_1min': load_avg[0],
-                      'load_5min': load_avg[1],
-                      'load_15min': load_avg[2],
-                      'cpu_percent': cpu_percent,
-                      'cpu_count': cpu_count,
-                      'load_per_cpu': round(load_avg[0] / cpu_count, 2)
-                  }
-                  
-                  self.report['system_stats']['load'] = load_info
-                  
-                  if load_avg[0] > cpu_count * 2:
-                      self.report['issues_found'].append(f"High system load: {load_avg[0]:.2f} (CPUs: {cpu_count})")
-                  
-                  return load_info
-              
-              def check_network_connectivity(self):
-                  """Test network connectivity"""
-                  connectivity_tests = [
-                      {'name': 'Google DNS', 'host': '8.8.8.8', 'port': 53},
-                      {'name': 'Google HTTPS', 'url': 'https://google.com'},
-                      {'name': 'Red Hat', 'url': 'https://access.redhat.com'}
-                  ]
-                  
-                  results = []
-                  
-                  for test in connectivity_tests:
-                      if 'url' in test:
-                          try:
-                              response = requests.get(test['url'], timeout=10)
-                              status = 'OK' if response.status_code == 200 else f"HTTP {response.status_code}"
-                              results.append({'test': test['name'], 'status': status, 'details': f"HTTP {response.status_code}"})
-                          except Exception as e:
-                              status = 'FAILED'
-                              results.append({'test': test['name'], 'status': status, 'details': str(e)})
-                              self.report['issues_found'].append(f"Network connectivity failed: {test['name']}")
-                      
-                      elif 'host' in test and 'port' in test:
-                          import socket
-                          try:
-                              sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                              sock.settimeout(5)
-                              result = sock.connect_ex((test['host'], test['port']))
-                              sock.close()
-                              status = 'OK' if result == 0 else 'FAILED'
-                              results.append({'test': test['name'], 'status': status, 'details': f"Port {test['port']}"})
-                              if result != 0:
-                                  self.report['issues_found'].append(f"Network connectivity failed: {test['name']}")
-                          except Exception as e:
-                              results.append({'test': test['name'], 'status': 'FAILED', 'details': str(e)})
-                  
-                  self.report['system_stats']['network'] = results
-                  return results
-              
-              def check_services(self):
-                  """Check critical system services"""
-                  critical_services = [
-                      'sshd', 'NetworkManager', 'systemd-resolved',
-                      'chronyd', 'firewalld', 'rsyslog'
-                  ]
-                  
-                  service_status = []
-                  
-                  for service in critical_services:
-                      try:
-                          result = subprocess.run(['systemctl', 'is-active', service], 
-                                                capture_output=True, text=True)
-                          status = result.stdout.strip()
-                          service_status.append({'service': service, 'status': status})
-                          
-                          if status != 'active':
-                              self.report['issues_found'].append(f"Service not active: {service} ({status})")
-                              # Attempt to restart
-                              restart_result = subprocess.run(['systemctl', 'restart', service], 
-                                                            capture_output=True, text=True)
-                              if restart_result.returncode == 0:
-                                  self.report['fixes_applied'].append(f"Restarted service: {service}")
-                      
-                      except Exception as e:
-                          service_status.append({'service': service, 'status': 'unknown'})
-                  
-                  self.report['system_stats']['services'] = service_status
-                  return service_status
-              
-              def generate_report(self):
-                  """Generate comprehensive system report"""
-                  print("\n" + "="*60)
-                  print("PYTHON SYSTEM ANALYSIS REPORT")
-                  print("="*60)
-                  print(f"Generated: {self.report['timestamp']}")
-                  print(f"Hostname: {self.report['hostname']}")
-                  
-                  # System Statistics
-                  if 'disk_usage' in self.report['system_stats']:
-                      print("\nDISK USAGE:")
-                      print(tabulate(self.report['system_stats']['disk_usage'], headers='keys', tablefmt='grid'))
-                  
-                  if 'memory' in self.report['system_stats']:
-                      memory = self.report['system_stats']['memory']
-                      print(f"\nMEMORY USAGE:")
-                      print(f"  Total: {memory['total_gb']} GB")
-                      print(f"  Used: {memory['used_gb']} GB ({memory['percent_used']:.1f}%)")
-                      print(f"  Available: {memory['available_gb']} GB")
-                      if memory['swap_total_gb'] > 0:
-                          print(f"  Swap: {memory['swap_used_gb']}/{memory['swap_total_gb']} GB ({memory['swap_percent']:.1f}%)")
-                  
-                  if 'load' in self.report['system_stats']:
-                      load = self.report['system_stats']['load']
-                      print(f"\nSYSTEM LOAD:")
-                      print(f"  Load Average: {load['load_1min']:.2f}, {load['load_5min']:.2f}, {load['load_15min']:.2f}")
-                      print(f"  CPU Usage: {load['cpu_percent']:.1f}%")
-                      print(f"  CPUs: {load['cpu_count']}")
-                  
-                  if 'network' in self.report['system_stats']:
-                      print("\nNETWORK CONNECTIVITY:")
-                      print(tabulate(self.report['system_stats']['network'], headers='keys', tablefmt='grid'))
-                  
-                  if 'services' in self.report['system_stats']:
-                      print("\nCRITICAL SERVICES:")
-                      print(tabulate(self.report['system_stats']['services'], headers='keys', tablefmt='grid'))
-                  
-                  # Issues and Fixes
-                  if self.report['issues_found']:
-                      print(f"\nISSUES FOUND ({len(self.report['issues_found'])}):")
-                      for i, issue in enumerate(self.report['issues_found'], 1):
-                          print(f"  {i}. {issue}")
-                  
-                  if self.report['fixes_applied']:
-                      print(f"\nFIXES APPLIED ({len(self.report['fixes_applied'])}):")
-                      for i, fix in enumerate(self.report['fixes_applied'], 1):
-                          print(f"  {i}. {fix}")
-                  
-                  # Save detailed report
-                  report_file = f"/var/log/python_system_analysis_{int(time.time())}.json"
-                  try:
-                      with open(report_file, 'w') as f:
-                          json.dump(self.report, f, indent=2)
-                      print(f"\nDetailed report saved: {report_file}")
-                  except Exception as e:
-                      print(f"\nFailed to save report: {e}")
-                  
-                  return self.report
-              
-              def run_full_analysis(self):
-                  """Run complete system analysis"""
-                  print("Starting Python system analysis...")
-                  
-                  self.check_disk_usage()
-                  self.check_memory_usage()
-                  self.check_system_load()
-                  self.check_network_connectivity()
-                  self.check_services()
-                  
-                  return self.generate_report()
-          
-          if __name__ == "__main__":
-              analyzer = SystemAnalyzer()
-              analyzer.run_full_analysis()
-              
-              # Exit with appropriate code
-              exit_code = 0 if not analyzer.report['issues_found'] else 1
-              sys.exit(exit_code)
-        dest: /usr/local/bin/python_system_analyzer.py
-        mode: '0755'
-    
-    - name: Run Python system analysis
-      ansible.builtin.command: python3 /usr/local/bin/python_system_analyzer.py
-      register: python_analysis
-      ignore_errors: true
-    
-    - name: Display Python analysis output
-      ansible.builtin.debug:
-        var: python_analysis.stdout_lines
-    
-    - name: Create scheduled analysis service
-      ansible.builtin.copy:
-        content: |
-          [Unit]
-          Description=Python System Analysis
-          
-          [Service]
-          Type=oneshot
-          ExecStart=/usr/bin/python3 /usr/local/bin/python_system_analyzer.py
-          User=root
-          
-          [Install]
-          WantedBy=multi-user.target
-        dest: /etc/systemd/system/python-system-analysis.service
-        mode: '0644'
-    
-    - name: Create analysis timer
-      ansible.builtin.copy:
-        content: |
-          [Unit]
-          Description=Run Python System Analysis Daily
-          Requires=python-system-analysis.service
-          
-          [Timer]
-          OnCalendar=daily
-          Persistent=true
-          
-          [Install]
-          WantedBy=timers.target
-        dest: /etc/systemd/system/python-system-analysis.timer
-        mode: '0644'
-    
-    - name: Enable and start analysis timer
-      ansible.builtin.systemd:
-        name: python-system-analysis.timer
-        enabled: true
-        state: started
-        daemon_reload: true
-    
-    - name: Analysis summary
-      ansible.builtin.debug:
-        msg: |
-          Python System Analysis Complete!
-          
-          Analysis script installed: /usr/local/bin/python_system_analyzer.py
-          Daily analysis scheduled via systemd timer
-          
-          Exit code: {{ python_analysis.rc }}
-          Issues found: {{ 'YES' if python_analysis.rc != 0 else 'NO' }}
-          
-          Run manually: python3 /usr/local/bin/python_system_analyzer.py
+  - name: Install Python and required packages
+  ansible.builtin.dnf:
+  - name: "{{ python_packages }}"
+  state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: Install Python analysis modules
+  ansible.builtin.pip:
+  - name: "{{ analysis_modules }}"
+  state: present
+  executable: pip3
+  ignore_errors: true
+
+- name: Create Python system analysis script
+  ansible.builtin.copy:
+  content: |
+    #!/usr/bin/env python3
+    """
+    Python System Analysis and Fixes
+    Comprehensive system health check and automated fixes
+    """
+
+    import os
+    import sys
+    import subprocess
+    import json
+    import time
+    import shutil
+    from datetime import datetime
+
+  try:
+    import psutil
+    import requests
+    from tabulate import tabulate
+    import yaml
+  except ImportError as e:
+  print(f"Required module missing: {e}")
+    print("Installing required modules...")
+    subprocess.run([sys.executable, "-m", "pip", "install", "psutil", "requests", "tabulate", "pyyaml"], check=False)
+    import psutil
+    import requests
+    from tabulate import tabulate
+    import yaml
+
+  class SystemAnalyzer:
+  def __init__(self):
+    self.report = {
+  'timestamp': datetime.now().isoformat(),
+  'hostname': os.uname().nodename,
+  'issues_found': [],
+  'fixes_applied': [],
+  'system_stats': {}
+    }
+
+  def check_disk_usage(self):
+    """Check disk usage and clean if needed"""
+    disk_usage = []
+    critical_partitions = []
+
+  for partition in psutil.disk_partitions():
+  try:
+    usage = psutil.disk_usage(partition.mountpoint)
+    percent_used = (usage.used / usage.total) * 100
+
+    disk_info = {
+  'device': partition.device,
+  'mountpoint': partition.mountpoint,
+  'total_gb': round(usage.total / (1024**3), 2),
+  'used_gb': round(usage.used / (1024**3), 2),
+  'free_gb': round(usage.free / (1024**3), 2),
+  'percent_used': round(percent_used, 2)
+    }
+    disk_usage.append(disk_info)
+
+  if percent_used > 90:
+    critical_partitions.append(disk_info)
+  self.report['issues_found'].append(f"Critical disk usage on {partition.mountpoint}: {percent_used:.1f}%")
+
+  except (PermissionError, OSError):
+    continue
+
+    self.report['system_stats']['disk_usage'] = disk_usage
+
+    # Auto-cleanup for critical partitions
+  if critical_partitions:
+    self.cleanup_disk_space()
+
+    return disk_usage
+
+  def cleanup_disk_space(self):
+    """Automated disk cleanup"""
+    cleanup_paths = [
+    '/tmp/*',
+    '/var/tmp/*',
+    '/var/log/*.log.*',
+    '/var/cache/dnf/*'
+    ]
+
+  for path_pattern in cleanup_paths:
+  try:
+    result = subprocess.run(['find', path_pattern.split('*')[0], '-name', path_pattern.split('/')[-1], '-type', 'f', '-atime', '+7', '-delete'],
+    capture_output=True, text=True)
+  if result.returncode == 0:
+    self.report['fixes_applied'].append(f"Cleaned old files matching {path_pattern}")
+  except Exception as e:
+    continue
+
+    # Clean package cache
+  try:
+    subprocess.run(['dnf', 'clean', 'all'], check=False, capture_output=True)
+    self.report['fixes_applied'].append("Cleaned DNF package cache")
+  except Exception:
+    pass
+
+  def check_memory_usage(self):
+    """Check memory usage and swap"""
+    memory = psutil.virtual_memory()
+    swap = psutil.swap_memory()
+
+    memory_info = {
+  'total_gb': round(memory.total / (1024**3), 2),
+  'used_gb': round(memory.used / (1024**3), 2),
+  'available_gb': round(memory.available / (1024**3), 2),
+  'percent_used': memory.percent,
+  'swap_total_gb': round(swap.total / (1024**3), 2) if swap.total > 0 else 0,
+  'swap_used_gb': round(swap.used / (1024**3), 2) if swap.total > 0 else 0,
+  'swap_percent': swap.percent if swap.total > 0 else 0
+    }
+
+    self.report['system_stats']['memory'] = memory_info
+
+  if memory.percent > 90:
+  self.report['issues_found'].append(f"Critical memory usage: {memory.percent:.1f}%")
+    self.optimize_memory()
+
+    return memory_info
+
+  def optimize_memory(self):
+    """Optimize memory usage"""
+  try:
+    # Drop caches
+    subprocess.run(['sync'], check=False)
+  with open('/proc/sys/vm/drop_caches', 'w') as f:
+    f.write('3')
+    self.report['fixes_applied'].append("Dropped system caches to free memory")
+  except Exception:
+    pass
+
+  def check_system_load(self):
+    """Check system load and CPU usage"""
+    load_avg = os.getloadavg()
+    cpu_percent = psutil.cpu_percent(interval=1)
+    cpu_count = psutil.cpu_count()
+
+    load_info = {
+  'load_1min': load_avg[0],
+  'load_5min': load_avg[1],
+  'load_15min': load_avg[2],
+  'cpu_percent': cpu_percent,
+  'cpu_count': cpu_count,
+  'load_per_cpu': round(load_avg[0] / cpu_count, 2)
+    }
+
+    self.report['system_stats']['load'] = load_info
+
+  if load_avg[0] > cpu_count * 2:
+  self.report['issues_found'].append(f"High system load: {load_avg[0]:.2f} (CPUs: {cpu_count})")
+
+    return load_info
+
+  def check_network_connectivity(self):
+    """Test network connectivity"""
+    connectivity_tests = [
+  {'name': 'Google DNS', 'host': '8.8.8.8', 'port': 53},
+  {'name': 'Google HTTPS', 'url': 'https://google.com'},
+  {'name': 'Red Hat', 'url': 'https://access.redhat.com'}
+    ]
+
+    results = []
+
+  for test in connectivity_tests:
+  if 'url' in test:
+  try:
+    response = requests.get(test['url'], timeout=10)
+    status = 'OK' if response.status_code == 200 else f"HTTP {response.status_code}"
+  results.append({'test': test['name'], 'status': status, 'details': f"HTTP {response.status_code}"})
+  except Exception as e:
+    status = 'FAILED'
+  results.append({'test': test['name'], 'status': status, 'details': str(e)})
+  self.report['issues_found'].append(f"Network connectivity failed: {test['name']}")
+
+  elif 'host' in test and 'port' in test:
+    import socket
+  try:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(5)
+    result = sock.connect_ex((test['host'], test['port']))
+    sock.close()
+    status = 'OK' if result == 0 else 'FAILED'
+  results.append({'test': test['name'], 'status': status, 'details': f"Port {test['port']}"})
+  if result != 0:
+  self.report['issues_found'].append(f"Network connectivity failed: {test['name']}")
+  except Exception as e:
+  results.append({'test': test['name'], 'status': 'FAILED', 'details': str(e)})
+
+    self.report['system_stats']['network'] = results
+    return results
+
+  def check_services(self):
+    """Check critical system services"""
+    critical_services = [
+    'sshd', 'NetworkManager', 'systemd-resolved',
+    'chronyd', 'firewalld', 'rsyslog'
+    ]
+
+    service_status = []
+
+  for service in critical_services:
+  try:
+    result = subprocess.run(['systemctl', 'is-active', service],
+    capture_output=True, text=True)
+    status = result.stdout.strip()
+  service_status.append({'service': service, 'status': status})
+
+  if status != 'active':
+  self.report['issues_found'].append(f"Service not active: {service} ({status})")
+    # Attempt to restart
+    restart_result = subprocess.run(['systemctl', 'restart', service],
+    capture_output=True, text=True)
+  if restart_result.returncode == 0:
+  self.report['fixes_applied'].append(f"Restarted service: {service}")
+
+  except Exception as e:
+  service_status.append({'service': service, 'status': 'unknown'})
+
+    self.report['system_stats']['services'] = service_status
+    return service_status
+
+  def generate_report(self):
+    """Generate comprehensive system report"""
+    print("\n" + "="*60)
+    print("PYTHON SYSTEM ANALYSIS REPORT")
+    print("="*60)
+  print(f"Generated: {self.report['timestamp']}")
+  print(f"Hostname: {self.report['hostname']}")
+
+    # System Statistics
+  if 'disk_usage' in self.report['system_stats']:
+  print("\nDISK USAGE:")
+    print(tabulate(self.report['system_stats']['disk_usage'], headers='keys', tablefmt='grid'))
+
+  if 'memory' in self.report['system_stats']:
+    memory = self.report['system_stats']['memory']
+  print(f"\nMEMORY USAGE:")
+  print(f" Total: {memory['total_gb']} GB")
+  print(f" Used: {memory['used_gb']} GB ({memory['percent_used']:.1f}%)")
+  print(f" Available: {memory['available_gb']} GB")
+  if memory['swap_total_gb'] > 0:
+  print(f" Swap: {memory['swap_used_gb']}/{memory['swap_total_gb']} GB ({memory['swap_percent']:.1f}%)")
+
+  if 'load' in self.report['system_stats']:
+    load = self.report['system_stats']['load']
+  print(f"\nSYSTEM LOAD:")
+  print(f" Load Average: {load['load_1min']:.2f}, {load['load_5min']:.2f}, {load['load_15min']:.2f}")
+  print(f" CPU Usage: {load['cpu_percent']:.1f}%")
+  print(f" CPUs: {load['cpu_count']}")
+
+  if 'network' in self.report['system_stats']:
+  print("\nNETWORK CONNECTIVITY:")
+    print(tabulate(self.report['system_stats']['network'], headers='keys', tablefmt='grid'))
+
+  if 'services' in self.report['system_stats']:
+  print("\nCRITICAL SERVICES:")
+    print(tabulate(self.report['system_stats']['services'], headers='keys', tablefmt='grid'))
+
+    # Issues and Fixes
+  if self.report['issues_found']:
+  print(f"\nISSUES FOUND ({len(self.report['issues_found'])}):")
+  for i, issue in enumerate(self.report['issues_found'], 1):
+    print(f" {i}. {issue}")
+
+  if self.report['fixes_applied']:
+  print(f"\nFIXES APPLIED ({len(self.report['fixes_applied'])}):")
+  for i, fix in enumerate(self.report['fixes_applied'], 1):
+    print(f" {i}. {fix}")
+
+    # Save detailed report
+    report_file = f"/var/log/python_system_analysis_{int(time.time())}.json"
+  try:
+  with open(report_file, 'w') as f:
+    json.dump(self.report, f, indent=2)
+  print(f"\nDetailed report saved: {report_file}")
+  except Exception as e:
+  print(f"\nFailed to save report: {e}")
+
+    return self.report
+
+  def run_full_analysis(self):
+    """Run complete system analysis"""
+    print("Starting Python system analysis...")
+
+    self.check_disk_usage()
+    self.check_memory_usage()
+    self.check_system_load()
+    self.check_network_connectivity()
+    self.check_services()
+
+    return self.generate_report()
+
+  if __name__ == "__main__":
+    analyzer = SystemAnalyzer()
+    analyzer.run_full_analysis()
+
+    # Exit with appropriate code
+    exit_code = 0 if not analyzer.report['issues_found'] else 1
+    sys.exit(exit_code)
+  dest: /usr/local/bin/python_system_analyzer.py
+  mode: '0755'
+
+- name: Run Python system analysis
+  ansible.builtin.command: python3 /usr/local/bin/python_system_analyzer.py
+  register: python_analysis
+  ignore_errors: true
+
+- name: Display Python analysis output
+  ansible.builtin.debug:
+  var: python_analysis.stdout_lines
+
+- name: Create scheduled analysis service
+  ansible.builtin.copy:
+  content: |
+    [Unit]
+    Description=Python System Analysis
+
+    [Service]
+    Type=oneshot
+    ExecStart=/usr/bin/python3 /usr/local/bin/python_system_analyzer.py
+    User=root
+
+    [Install]
+    WantedBy=multi-user.target
+  dest: /etc/systemd/system/python-system-analysis.service
+  mode: '0644'
+
+- name: Create analysis timer
+  ansible.builtin.copy:
+  content: |
+    [Unit]
+    Description=Run Python System Analysis Daily
+    Requires=python-system-analysis.service
+
+    [Timer]
+    OnCalendar=daily
+    Persistent=true
+
+    [Install]
+    WantedBy=timers.target
+  dest: /etc/systemd/system/python-system-analysis.timer
+  mode: '0644'
+
+- name: Enable and start analysis timer
+  ansible.builtin.systemd:
+  - name: python-system-analysis.timer
+  enabled: true
+  state: started
+  daemon_reload: true
+
+- name: Analysis summary
+  ansible.builtin.debug:
+  msg: |
+    Python System Analysis Complete!
+
+  Analysis script installed: /usr/local/bin/python_system_analyzer.py
+    Daily analysis scheduled via systemd timer
+
+  Exit code: {{ python_analysis.rc }}
+  Issues found: {{ 'YES' if python_analysis.rc != 0 else 'NO' }}
+
+  Run manually: python3 /usr/local/bin/python_system_analyzer.py

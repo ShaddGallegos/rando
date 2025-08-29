@@ -1,397 +1,394 @@
 ---
 - name: Install audio, video, and multimedia applications on RHEL 9
-  hosts: localhost  # Change to your target host or group if needed
+- hosts: localhost # Change to your target host or group if needed
   become: true
 
   pre_tasks:
-    - name: Ensure community.general collection is installed for user
-      ansible.builtin.command: ansible-galaxy collection install community.general
-      args:
-        creates: ~/.ansible/collections/ansible_collections/community/general
+  - name: Ensure community.general collection is installed for user
+  ansible.builtin.command: ansible-galaxy collection install community.general
+  args:
+  creates: ~/.ansible/collections/ansible_collections/community/general
 
-    - name: Ensure community.general collection is installed for root
-      ansible.builtin.command: ansible-galaxy collection install community.general
-      args:
-        creates: /root/.ansible/collections/ansible_collections/community/general
+- name: Ensure community.general collection is installed for root
+  ansible.builtin.command: ansible-galaxy collection install community.general
+  args:
+  creates: /root/.ansible/collections/ansible_collections/community/general
 
   tasks:
     # --- REPOSITORY SETUP ---
-    - name: Enable the CodeReady Builder repository (required for some dependencies)
-      ansible.builtin.shell: |
-        set -o pipefail
-        if ! subscription-manager repos --list-enabled | grep -q codeready-builder-for-rhel-9-x86_64-rpms; then
-          subscription-manager repos --enable codeready-builder-for-rhel-9-x86_64-rpms
-        fi
-      changed_when: false
+- name: Enable the CodeReady Builder repository (required for some dependencies)
+  ansible.builtin.shell: |
+    set -o pipefail
+    if ! subscription-manager repos --list-enabled | grep -q codeready-builder-for-rhel-9-x86_64-rpms; then
+    subscription-manager repos --enable codeready-builder-for-rhel-9-x86_64-rpms
+    fi
+  changed_when: false
 
-    - name: Install EPEL repository
-      ansible.builtin.dnf:
-        name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install EPEL repository
+  ansible.builtin.dnf:
+  - name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+  state: present
+  allowerasing: true
+  skip_broken: true
 
-    - name: Install RPM Fusion Free repository
-      ansible.builtin.dnf:
-        name: https://download1.rpmfusion.org/free/el/rpmfusion-free-release-9.noarch.rpm
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install RPM Fusion Free repository
+  ansible.builtin.dnf:
+  - name: https://download1.rpmfusion.org/free/el/rpmfusion-free-release-9.noarch.rpm
+  state: present
+  allowerasing: true
+  skip_broken: true
 
-    - name: Install RPM Fusion Nonfree repository
-      ansible.builtin.dnf:
-        name: https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-9.noarch.rpm
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install RPM Fusion Nonfree repository
+  ansible.builtin.dnf:
+  - name: https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-9.noarch.rpm
+  state: present
+  allowerasing: true
+  skip_broken: true
 
+- name: Add raven-multimedia repository
+  ansible.builtin.yum_repository:
+  - name: raven-multimedia
+  description: Raven Multimedia Repository
+  baseurl: https://pkgs.sysadmins.ws/el9/multimedia/x86_64/
+  enabled: true
+  gpgcheck: false
 
-    - name: Add raven-multimedia repository
-      ansible.builtin.yum_repository:
-        name: raven-multimedia
-        description: Raven Multimedia Repository
-        baseurl: https://pkgs.sysadmins.ws/el9/multimedia/x86_64/
-        enabled: true
-        gpgcheck: false
-
-    - name: Ensure DNF metadata is up to date
-      ansible.builtin.dnf:
-        update_cache: true
+- name: Ensure DNF metadata is up to date
+  ansible.builtin.dnf:
+  update_cache: true
 
     # --- REMOVE CONFLICTING PACKAGES ---
-    - name: Remove EPEL ffmpeg-free and related devel/libs packages (to avoid conflict)
-      ansible.builtin.dnf:
-        name:
-          - ffmpeg-free
-          - ffmpeg-free-devel
-          - libavcodec-free
-          - libavcodec-free-devel
-          - libavdevice-free
-          - libavdevice-free-devel
-          - libavfilter-free
-          - libavfilter-free-devel
-          - libavformat-free
-          - libavformat-free-devel
-          - libavutil-free
-          - libavutil-free-devel
-          - libpostproc-free
-          - libpostproc-free-devel
-          - libswresample-free
-          - libswresample-free-devel
-          - libswscale-free
-          - libswscale-free-devel
-        state: absent
-        autoremove: true
-        allowerasing: true
-        skip_broken: true
+- name: Remove EPEL ffmpeg-free and related devel/libs packages (to avoid conflict)
+  ansible.builtin.dnf:
+  - name:
+- ffmpeg-free
+- ffmpeg-free-devel
+- libavcodec-free
+- libavcodec-free-devel
+- libavdevice-free
+- libavdevice-free-devel
+- libavfilter-free
+- libavfilter-free-devel
+- libavformat-free
+- libavformat-free-devel
+- libavutil-free
+- libavutil-free-devel
+- libpostproc-free
+- libpostproc-free-devel
+- libswresample-free
+- libswresample-free-devel
+- libswscale-free
+- libswscale-free-devel
+  state: absent
+  autoremove: true
+  allowerasing: true
+  skip_broken: true
 
-    - name: Remove all x264 and ffmpeg libraries to avoid repo conflicts
-      ansible.builtin.dnf:
-        name:
-          - x264-libs
-          - ffmpeg
-          - ffmpeg-libs
-          - ffmpeg-devel
-          - vlc
-          - vlc-plugins-freeworld
-        state: absent
-        autoremove: true
-        allowerasing: true
-        skip_broken: true
+- name: Remove all x264 and ffmpeg libraries to avoid repo conflicts
+  ansible.builtin.dnf:
+  - name:
+- x264-libs
+- ffmpeg
+- ffmpeg-libs
+- ffmpeg-devel
+- vlc
+- vlc-plugins-freeworld
+  state: absent
+  autoremove: true
+  allowerasing: true
+  skip_broken: true
 
     # --- MULTIMEDIA APPLICATIONS ---
-    - name: Install VLC media player
-      ansible.builtin.dnf:
-        name: vlc
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install VLC media player
+  ansible.builtin.dnf:
+  - name: vlc
+  state: present
+  allowerasing: true
+  skip_broken: true
 
-    - name: Install ffmpeg for additional codec support
-      ansible.builtin.dnf:
-        name: ffmpeg
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install ffmpeg for additional codec support
+  ansible.builtin.dnf:
+  - name: ffmpeg
+  state: present
+  allowerasing: true
+  skip_broken: true
 
-    - name: Install ffmpeg-devel from raven-multimedia repo
-      ansible.builtin.dnf:
-        name: ffmpeg-devel
-        state: present
-        enablerepo: raven-multimedia
-        allowerasing: true
-        skip_broken: true
+- name: Install ffmpeg-devel from raven-multimedia repo
+  ansible.builtin.dnf:
+  - name: ffmpeg-devel
+  state: present
+  enablerepo: raven-multimedia
+  allowerasing: true
+  skip_broken: true
 
-    - name: Install MPV Player (high-quality video player)
-      ansible.builtin.dnf:
-        name: mpv
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install MPV Player (high-quality video player)
+  ansible.builtin.dnf:
+  - name: mpv
+  state: present
+  allowerasing: true
+  skip_broken: true
 
-    - name: Install Strawberry Music Player
-      ansible.builtin.dnf:
-        name: strawberry
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install Strawberry Music Player
+  ansible.builtin.dnf:
+  - name: strawberry
+  state: present
+  allowerasing: true
+  skip_broken: true
 
-    - name: Install Clementine Music Player
-      ansible.builtin.dnf:
-        name: clementine
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install Clementine Music Player
+  ansible.builtin.dnf:
+  - name: clementine
+  state: present
+  allowerasing: true
+  skip_broken: true
 
+- name: Install JACK Audio Connection Kit
+  ansible.builtin.dnf:
+  - name:
+- jack-audio-connection-kit
+  state: present
+  allowerasing: true
+  skip_broken: true
 
-    - name: Install JACK Audio Connection Kit
-      ansible.builtin.dnf:
-        name:
-          - jack-audio-connection-kit
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install Flatpak
+  ansible.builtin.dnf:
+  - name: flatpak
+  state: present
 
-    - name: Install Flatpak
-      ansible.builtin.dnf:
-        name: flatpak
-        state: present
+- name: Add Flathub remote if missing
+  ansible.builtin.command: >
+  flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+  args:
+  creates: /var/lib/flatpak/repo/flathub.trustedkeys.gpg
 
-    - name: Add Flathub remote if missing
-      ansible.builtin.command: >
-        flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-      args:
-        creates: /var/lib/flatpak/repo/flathub.trustedkeys.gpg
-
-    - name: Install additional multimedia codecs and tools
-      ansible.builtin.dnf:
-        name:
-          - ffmpeg-libs
-          - gstreamer1-plugins-ugly
-          - gstreamer1-plugins-good
-          - gstreamer1-plugins-bad-free
-          - gstreamer1-plugins-base
-          - gstreamer1-libav
-        state: present
-        allowerasing: true
-        skip_broken: true
-
+- name: Install additional multimedia codecs and tools
+  ansible.builtin.dnf:
+  - name:
+- ffmpeg-libs
+- gstreamer1-plugins-ugly
+- gstreamer1-plugins-good
+- gstreamer1-plugins-bad-free
+- gstreamer1-plugins-base
+- gstreamer1-libav
+  state: present
+  allowerasing: true
+  skip_broken: true
 
     # --- FLATPAK MULTIMEDIA TOOLS ---
-    - name: Install HandBrake (GUI and CLI) via Flatpak
-      community.general.flatpak:
-        name: fr.handbrake.ghb
-        state: present
-        remote: flathub
+- name: Install HandBrake (GUI and CLI) via Flatpak
+  community.general.flatpak:
+  - name: fr.handbrake.ghb
+  state: present
+  remote: flathub
 
-    - name: Install Video Downloader via Flatpak
-      community.general.flatpak:
-        name: io.github.nickvision.tubeconverter
-        state: present
-        remote: flathub
+- name: Install Video Downloader via Flatpak
+  community.general.flatpak:
+  - name: io.github.nickvision.tubeconverter
+  state: present
+  remote: flathub
 
-    - name: Install FSearch via Flatpak
-      community.general.flatpak:
-        name: io.github.cboxdoerfer.FSearch
-        state: present
-        remote: flathub
+- name: Install FSearch via Flatpak
+  community.general.flatpak:
+  - name: io.github.cboxdoerfer.FSearch
+  state: present
+  remote: flathub
 
-    - name: Install OpenShot Video Editor via Flatpak
-      community.general.flatpak:
-        name: org.openshot.OpenShot
-        state: present
-        remote: flathub
+- name: Install OpenShot Video Editor via Flatpak
+  community.general.flatpak:
+  - name: org.openshot.OpenShot
+  state: present
+  remote: flathub
 
-    - name: Install GIMP via Flatpak
-      community.general.flatpak:
-        name: org.gimp.GIMP
-        state: present
-        remote: flathub
+- name: Install GIMP via Flatpak
+  community.general.flatpak:
+  - name: org.gimp.GIMP
+  state: present
+  remote: flathub
 
-    - name: Install Video Trimmer via Flatpak
-      community.general.flatpak:
-        name: org.gnome.gitlab.YaLTeR.VideoTrimmer
-        state: present
-        remote: flathub
+- name: Install Video Trimmer via Flatpak
+  community.general.flatpak:
+  - name: org.gnome.gitlab.YaLTeR.VideoTrimmer
+  state: present
+  remote: flathub
 
     # --- SNAP AND AUDIO/VIDEO EDITORS ---
-    - name: Install Snapd (for installing Kdenlive, Audacity, OBS Studio, Audacious, SMPlayer)
-      ansible.builtin.dnf:
-        name: snapd
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install Snapd (for installing Kdenlive, Audacity, OBS Studio, Audacious, SMPlayer)
+  ansible.builtin.dnf:
+  - name: snapd
+  state: present
+  allowerasing: true
+  skip_broken: true
 
-    - name: Enable the snapd socket
-      ansible.builtin.systemd:
-        name: snapd.socket
-        enabled: true
-        state: started
+- name: Enable the snapd socket
+  ansible.builtin.systemd:
+  - name: snapd.socket
+  enabled: true
+  state: started
 
-    - name: Ensure snap directory is in PATH
-      ansible.builtin.lineinfile:
-        path: /etc/profile
-        line: 'export PATH=$PATH:/snap/bin'
-        state: present
+- name: Ensure snap directory is in PATH
+  ansible.builtin.lineinfile:
+  path: /etc/profile
+  line: 'export PATH=$PATH:/snap/bin'
+  state: present
 
-    - name: Install Kdenlive (video editor)
-      community.general.snap:
-        name: kdenlive
-        classic: true
+- name: Install Kdenlive (video editor)
+  community.general.snap:
+  - name: kdenlive
+  classic: true
 
-    - name: Install Audacity (audio editor)
-      community.general.snap:
-        name: audacity
-        classic: true
+- name: Install Audacity (audio editor)
+  community.general.snap:
+  - name: audacity
+  classic: true
 
-    - name: Install OBS Studio (screen recorder/streamer)
-      community.general.snap:
-        name: obs-studio
-        classic: true
+- name: Install OBS Studio (screen recorder/streamer)
+  community.general.snap:
+  - name: obs-studio
+  classic: true
 
-    - name: Install Audacious (lightweight audio player)
-      community.general.snap:
-        name: audacious
-        classic: true
+- name: Install Audacious (lightweight audio player)
+  community.general.snap:
+  - name: audacious
+  classic: true
 
-    - name: Install SMPlayer (versatile media player)
-      community.general.snap:
-        name: smplayer
-        classic: true
+- name: Install SMPlayer (versatile media player)
+  community.general.snap:
+  - name: smplayer
+  classic: true
 
     # --- AUDIO SAMPLERS ---
-    - name: Install LinuxSampler and sfizz (samplers)
-      ansible.builtin.dnf:
-        name:
-          - linuxsampler
-          - sfizz
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install LinuxSampler and sfizz (samplers)
+  ansible.builtin.dnf:
+  - name:
+- linuxsampler
+- sfizz
+  state: present
+  allowerasing: true
+  skip_broken: true
 
     # TAL-Sampler is commercial and not available in Linux repos.
 
     # --- DJ APPLICATIONS ---
-    - name: Install Mixxx (DJ software)
-      ansible.builtin.dnf:
-        name: mixxx
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install Mixxx (DJ software)
+  ansible.builtin.dnf:
+  - name: mixxx
+  state: present
+  allowerasing: true
+  skip_broken: true
 
     # VirtualDJ is not available for Linux.
 
     # --- MUSIC PRODUCTION SOFTWARE (DAWs and sequencers) ---
-    - name: Install Ardour, LMMS, Qtractor, Rosegarden, Hydrogen
-      ansible.builtin.dnf:
-        name:
-          - ardour
-          - lmms
-          - qtractor
-          - rosegarden
-          - hydrogen
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install Ardour, LMMS, Qtractor, Rosegarden, Hydrogen
+  ansible.builtin.dnf:
+  - name:
+- ardour
+- lmms
+- qtractor
+- rosegarden
+- hydrogen
+  state: present
+  allowerasing: true
+  skip_broken: true
 
     # --- VOICE CHANGERS AND SOUND EFFECTS SOFTWARE ---
-    - name: Install EasyEffects (formerly PulseEffects)
-      ansible.builtin.dnf:
-        name: easyeffects
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install EasyEffects (formerly PulseEffects)
+  ansible.builtin.dnf:
+  - name: easyeffects
+  state: present
+  allowerasing: true
+  skip_broken: true
 
-    - name: Install Vocproc (vocals processor)
-      ansible.builtin.dnf:
-        name: vocproc
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install Vocproc (vocals processor)
+  ansible.builtin.dnf:
+  - name: vocproc
+  state: present
+  allowerasing: true
+  skip_broken: true
 
-    - name: Install Guitarix (guitar effects)
-      ansible.builtin.dnf:
-        name: guitarix
-        state: present
-        allowerasing: true
-        skip_broken: true
+- name: Install Guitarix (guitar effects)
+  ansible.builtin.dnf:
+  - name: guitarix
+  state: present
+  allowerasing: true
+  skip_broken: true
 
     # Voicemod is not available for Linux.
 
     # --- AI/ML & Audio/Video Creation Tools ---
 
     # --- GitHub Copilot CLI ---
-    - name: Install GitHub Copilot CLI (pipx recommended)
-      ansible.builtin.pip:
-        name: github-copilot-cli
-        executable: pip3
-        state: latest
+- name: Install GitHub Copilot CLI (pipx recommended)
+  ansible.builtin.pip:
+  - name: github-copilot-cli
+  executable: pip3
+  state: latest
 
     # --- Auphonic ---
-    - name: Install Auphonic Python client
-      ansible.builtin.pip:
-        name: auphonic
-        executable: pip3
-        state: latest
+- name: Install Auphonic Python client
+  ansible.builtin.pip:
+  - name: auphonic
+  executable: pip3
+  state: latest
 
     # --- Whisper by OpenAI (requires PyTorch) ---
-    - name: Install PyTorch (CPU version)
-      ansible.builtin.pip:
-        name: torch
-        executable: pip3
-        state: latest
+- name: Install PyTorch (CPU version)
+  ansible.builtin.pip:
+  - name: torch
+  executable: pip3
+  state: latest
 
-    - name: Install Whisper by OpenAI
-      ansible.builtin.pip:
-        name: git+https://github.com/openai/whisper.git
-        executable: pip3
-        state: latest
+- name: Install Whisper by OpenAI
+  ansible.builtin.pip:
+  - name: git+https://github.com/openai/whisper.git
+  executable: pip3
+  state: latest
 
     # --- InstructLab CLI ---
-    - name: Install InstructLab CLI
-      ansible.builtin.pip:
-        name: instructlab
-        executable: pip3
-        state: latest
+- name: Install InstructLab CLI
+  ansible.builtin.pip:
+  - name: instructlab
+  executable: pip3
+  state: latest
 
     # --- FFmpeg + AI Plugins (CUDA support) ---
-    # NOTE: For advanced AI filters, compile FFmpeg with CUDA. See official docs for details.
+  # NOTE: For advanced AI filters, compile FFmpeg with CUDA. See official docs for details.
 
     # --- Descript, Lumen5, Adobe Premiere Pro, ClipChamp ---
-    # NOTE: These are web/desktop tools. Use browser or remote desktop as appropriate.
-    # - Descript: https://www.descript.com/
-    # - Lumen5: https://lumen5.com/ (API available)
-    # - Adobe Premiere Pro: Use via VM/remote desktop
-    # - ClipChamp: https://clipchamp.com/ (use with Chromium)
+  # NOTE: These are web/desktop tools. Use browser or remote desktop as appropriate.
+  # - Descript: https://www.descript.com/
+  # - Lumen5: https://lumen5.com/ (API available)
+  # - Adobe Premiere Pro: Use via VM/remote desktop
+  # - ClipChamp: https://clipchamp.com/ (use with Chromium)
 
     # --- RHEL AI (Developer Preview) ---
-    # NOTE: To run, use Podman:
-    # podman run -it --rm quay.io/rhel-ai-distribution/rhel-ai:latest
+  # NOTE: To run, use Podman:
+  # podman run -it --rm quay.io/rhel-ai-distribution/rhel-ai:latest
 
     # --- REAPER and ReaPack ---
-    - name: Download and install REAPER (Linux x86_64)
-      ansible.builtin.get_url:
-        url: https://www.reaper.fm/files/7.x/reaper742_linux_x86_64.tar.xz
-        dest: /tmp/reaper_linux_x86_64.tar.xz
-        mode: '0644'
+- name: Download and install REAPER (Linux x86_64)
+  ansible.builtin.get_url:
+  url: https://www.reaper.fm/files/7.x/reaper742_linux_x86_64.tar.xz
+  dest: /tmp/reaper_linux_x86_64.tar.xz
+  mode: '0644'
 
-    - name: Extract REAPER
-      ansible.builtin.unarchive:
-        src: /tmp/reaper_linux_x86_64.tar.xz
-        dest: /opt/
-        remote_src: yes
-      become: true
+- name: Extract REAPER
+  ansible.builtin.unarchive:
+  src: /tmp/reaper_linux_x86_64.tar.xz
+  dest: /opt/
+  remote_src: yes
+  become: true
 
-    - name: Create symlink for REAPER in /usr/local/bin
-      ansible.builtin.file:
-        src: /opt/reaper_linux_x86_64/REAPER/reaper
-        dest: /usr/local/bin/reaper
-        state: link
-      become: true
+- name: Create symlink for REAPER in /usr/local/bin
+  ansible.builtin.file:
+  src: /opt/reaper_linux_x86_64/REAPER/reaper
+  dest: /usr/local/bin/reaper
+  state: link
+  become: true
 
-    - name: Download and install ReaPack for REAPER
-      ansible.builtin.get_url:
-        url: https://github.com/cfillion/reapack/releases/download/v1.2.5.1/reaper_reapack-x86_64.so
-        dest: /opt/reaper_linux_x86_64/REAPER/UserPlugins/reaper_reapack-x86_64.so
-        mode: '0644'
-      become: true
+- name: Download and install ReaPack for REAPER
+  ansible.builtin.get_url:
+  url: https://github.com/cfillion/reapack/releases/download/v1.2.5.1/reaper_reapack-x86_64.so
+  dest: /opt/reaper_linux_x86_64/REAPER/UserPlugins/reaper_reapack-x86_64.so
+  mode: '0644'
+  become: true
